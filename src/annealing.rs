@@ -6,7 +6,6 @@ extern crate rand;
 
 use std::f64;
 use std::ops::Range;
-use self::rand::thread_rng;
 use self::rand::Rng;
 
 // These values are taken from Carpalx, with T0 adjusted for the scale that our
@@ -36,11 +35,12 @@ fn cutoff_p(de: f64, i: usize)
 pub fn accept_transition(de: f64, i: usize)
 -> bool
 {
+	let mut rng = rand::thread_rng();
 	if de < 0.0 {
 		true
 	} else {
 		let p_de = cutoff_p(de, i);
-		let r = thread_rng().next_f64();
+		let r = rng.gen::<f64>();
 		r < p_de
 	}
 }
