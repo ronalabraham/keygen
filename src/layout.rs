@@ -70,7 +70,8 @@ pub enum Row
 	Top,
 	Home,
 	Bottom,
-	Thumb,
+	ThumbTop,
+	ThumbHome
 }
 
 #[derive(Clone, Copy)]
@@ -257,8 +258,8 @@ static KEY_ROWS: KeyMap<Row> = KeyMap([
 	Row::Top,    Row::Top,    Row::Top,    Row::Top,    Row::Top,    Row::Top,       Row::Top,    Row::Top,    Row::Top,    Row::Top,    Row::Top,    Row::Top,
 	Row::Home,   Row::Home,   Row::Home,   Row::Home,   Row::Home,   Row::Home,      Row::Home,   Row::Home,   Row::Home,   Row::Home,   Row::Home,   Row::Home,
 	Row::Bottom, Row::Bottom, Row::Bottom, Row::Bottom, Row::Bottom, Row::Bottom,    Row::Bottom, Row::Bottom, Row::Bottom, Row::Bottom, Row::Bottom, Row::Bottom,
-	Row::Thumb, Row::Thumb, Row::Thumb, Row::Thumb, Row::Thumb, Row::Thumb, Row::Thumb, Row::Thumb, Row::Thumb, Row::Thumb,
-	Row::Thumb, Row::Thumb, Row::Thumb, Row::Thumb]);
+	Row::ThumbHome, Row::ThumbHome, Row::ThumbHome, Row::ThumbHome, Row::ThumbHome, Row::ThumbHome, Row::ThumbHome, Row::ThumbHome, Row::ThumbHome, Row::ThumbHome,
+	Row::ThumbTop, Row::ThumbTop, Row::ThumbTop, Row::ThumbTop]);
 static KEY_CENTER_COLUMN: KeyMap<bool> = KeyMap([
 	false, false, false, false, false, true,    true, false, false, false, false, false,
 	false, false, false, false, false, true,    true, false, false, false, false, false,
@@ -467,17 +468,19 @@ impl fmt::Display for Layer
 		write!(f, "{} {} {} {} {} {} | {} {} {} {} {} {}
 {} {} {} {} {} {} | {} {} {} {} {} {}
 {} {} {} {} {} {} | {} {} {} {} {} {}
-  {} {} {} {} {} | {} {} {} {} {}
-        {} {} | {} {}",
+
+        {} {} | {} {}
+  {} {} {} {} {} | {} {} {} {} {}",/*inverting the thumb layers for a cleaner resulting look*/
 			layer[0], layer[1], layer[2], layer[3], layer[4], layer[5],
 			layer[6], layer[7], layer[8], layer[9], layer[10], layer[11],
 			layer[12], layer[13], layer[14], layer[15], layer[16], layer[17],
 			layer[18], layer[19], layer[20], layer[21], layer[22], layer[23],
 			layer[24], layer[25], layer[26], layer[27], layer[28],  layer[29],
 			   layer[30], layer[31], layer[32], layer[33], layer[34], layer[35],
-			   layer[36], layer[37], layer[38], layer[39], layer[40],
-			   layer[41], layer[42], layer[43], layer[44], layer[45],
+
 			   layer[46], layer[47],
-			   layer[48], layer[49])
+			   layer[48], layer[49],
+			   layer[36], layer[37], layer[38], layer[39], layer[40],
+			   layer[41], layer[42], layer[43], layer[44], layer[45])
 	}
 }
