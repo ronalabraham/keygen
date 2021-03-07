@@ -16,9 +16,11 @@ This code follows the simulated annealing method used in [Carpalx](http://mkweb.
 
 ## Installing and running
 
-You'll need a recent-ish version of [Rust](https://www.rust-lang.org/). The nightly version is used for the `linked_list_extras` feature.
+You'll need a recent-ish version of [Rust](https://www.rust-lang.org/). The nightly version is used for the `linked_list_cursors` feature.
 
 Then: `cargo +nightly run -- run corpus/books.short.txt`.
+
+If you don't have the nightly toolchain installed, run: `rustup install nightly`.
 
 ## Installing the (upcoming) optimal keyboard layout
 
