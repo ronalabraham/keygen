@@ -189,9 +189,9 @@ fn list_insert_ordered(mut list: LinkedList<BestLayoutsEntry>, entry: BestLayout
 		let mut cursor = list.cursor_front_mut();
 		loop {
 			{
-				let opt_next = cursor.peek_next();
-				if let Some(next) = opt_next {
-					let cmp = entry.cmp(next);
+				let maybe_current = cursor.current();
+				if let Some(current) = maybe_current {
+					let cmp = entry.cmp(current);
 					if cmp == Ordering::Less {
 						break;
 					}
@@ -204,7 +204,7 @@ fn list_insert_ordered(mut list: LinkedList<BestLayoutsEntry>, entry: BestLayout
 		}
 
 		// Add to list.
-		cursor.insert_after(entry);
+		cursor.insert_before(entry);
 	}
 	list
 }
