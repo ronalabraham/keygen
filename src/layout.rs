@@ -12,7 +12,7 @@ use self::rand::random;
 // KeyMap format:
 //    LEFT HAND   |    RIGHT HAND
 //  0  1  2  3  4 |  5  6  7  8  9 10
-// 11 12 13 14 15 | 16 17 18 19 20 21 
+// 11 12 13 14 15 | 16 17 18 19 20 21
 // 22 23 24 25 26 | 27 28 29 30 31
 //
 //             32 | 33 (thumb keys)
@@ -47,7 +47,7 @@ pub struct LayoutPosMap([Option<KeyPress>; 128]);
 pub struct LayoutShuffleMask(KeyMap<bool>);
 
 #[derive(Clone, Copy, PartialEq)]
-pub enum Finger 
+pub enum Finger
 {
 	Thumb,
 	Index,
@@ -192,12 +192,53 @@ pub static ARENSITO_LAYOUT: Layout = Layout(
 // 	true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,
 // 	true,  true,  true,  true,  true,  true,  true,  true,  true,  true,
 // 	false]));
-static LAYOUT_MASK_SWAP_OFFSETS: [usize; 33] = [
-	0, 0, 0, 0, 0,    0, 0, 0, 0, 0,
-	1, 1, 1, 1, 1,    1, 1, 1, 1, 1, 1,
-	1, 1, 1, 1, 1,    1, 1, 1, 1, 1,
-	1, 1];
-static LAYOUT_MASK_NUM_SWAPPABLE: usize = 33;
+static SWAPPABLE_MAP: KeyMap<bool>= KeyMap([
+    true,  true,  true,  true,  true,       true,  true,  true,  true,  true,  false,
+    true,  true,  true,  true,  true,       true,  true,  true,  true,  true,  true,
+    true,  true,  true,  true,  true,       true,  true,  true,  true,  true,
+                                true,       true
+]);
+
+fn num_swappable(swappable_map: &KeyMap<bool>) -> usize {
+    let KeyMap(ref layer) = swappable_map;
+    layer.iter().map(|&x| x as usize).sum()
+}
+
+fn swap_offsets(swappable_map: &KeyMap<bool>) -> Vec<usize> {
+    // e.g. If `swappable_map`:
+    //
+    //     static swappable_map: KeyMap<bool>= KeyMap([
+    //         true,  true,  true,  true,  true,       true,  true,  true,  true,  true,  false,
+    //         true,  true,  true,  true,  true,       true,  true,  true,  true,  true,  true,
+    //         true,  true,  true,  true,  true,       true,  true,  true,  true,  true,
+    //                                     false,      false
+    //     ]);
+    //
+    // then 'swap_offsets(swappable_map)` returns:
+    //
+    //     let mut result: Vec<usize> = vec![
+    //         0, 0, 0, 0, 0,    0, 0, 0, 0, 0,
+    //         1, 1, 1, 1, 1,    1, 1, 1, 1, 1, 1,
+    //         1, 1, 1, 1, 1,    1, 1, 1, 1, 1,
+    //                     1,    1
+    //     ];
+    let mut result: Vec<usize> = vec![];
+    let KeyMap(ref layer) = swappable_map;
+    let mut offset: usize = 0;
+    for is_swappable in layer.iter() {
+        if *is_swappable {
+            result.push(offset);
+        } else {
+            offset += 1;
+        }
+    }
+    result
+}
+
+lazy_static! {
+    static ref LAYOUT_MASK_NUM_SWAPPABLE: usize = num_swappable(&SWAPPABLE_MAP);
+    static ref LAYOUT_MASK_SWAP_OFFSETS: Vec<usize> = swap_offsets(&SWAPPABLE_MAP);
+}
 
 static KEY_FINGERS: KeyMap<Finger> = KeyMap([
 	Finger::Pinky, Finger::Ring, Finger::Middle, Finger::Index, Finger::Index,    Finger::Index, Finger::Index, Finger::Middle, Finger::Ring, Finger::Pinky, Finger::Pinky,
@@ -223,9 +264,10 @@ static KEY_CENTER_COLUMN: KeyMap<bool> = KeyMap([
 pub static KP_NONE: Option<KeyPress> = None;
 
 static LAYOUT_FILE_IDXS: KeyMap<usize> = KeyMap([
-	0,  1,  2,  3,  4,     6,  7,  8,  9,  10, 11,
-	13, 14, 15, 16, 17,    19, 20, 21, 22, 23, 24,
-	26, 27, 28, 29, 30,    32, 33, 34, 35, 36, 37, 38]);
+     0,  1,  2,  3,  4,     6,  7,  8,  9, 10, 11,
+    13, 14, 15, 16, 17,    19, 20, 21, 22, 23, 24,
+    26, 27, 28, 29, 30,    32, 33, 34, 35, 36,
+                    37,    38]);
 
 /* ----- *
  * IMPLS *
@@ -239,7 +281,7 @@ impl Layout
 		let s: Vec<char> = s.chars().collect();
 		let mut lower: [char; 34] = ['\0'; 34];
 		let mut upper: [char; 34] = ['\0'; 34];
-		
+
 		for i in 0..34 {
 			let file_i = LAYOUT_FILE_IDXS.0[i];
 			lower[i] = *s.get(file_i).unwrap_or(&'\0');
@@ -270,11 +312,11 @@ impl Layout
 		LayoutPosMap(map)
 	}
 
-	fn shuffle_position() 
+	fn shuffle_position()
 	-> (usize, usize)
 	{
-		let mut i = random::<usize>() % LAYOUT_MASK_NUM_SWAPPABLE;
-		let mut j = random::<usize>() % (LAYOUT_MASK_NUM_SWAPPABLE - 1);
+		let mut i = random::<usize>() % *LAYOUT_MASK_NUM_SWAPPABLE;
+		let mut j = random::<usize>() % (*LAYOUT_MASK_NUM_SWAPPABLE - 1);
 		if j >= i {
 			j += 1;
 		}
@@ -361,7 +403,7 @@ impl Iterator for LayoutPermutations
 
 		if self.started {
 			for (i, e) in self.swap_idx.iter_mut().enumerate() {
-				if *e + 1 < LAYOUT_MASK_NUM_SWAPPABLE - i {
+				if *e + 1 < *LAYOUT_MASK_NUM_SWAPPABLE - i {
 					*e += 1;
 					some = true;
 					idx = i;
@@ -405,8 +447,15 @@ impl fmt::Display for Layout
 	fn fmt(&self, f: &mut fmt::Formatter)
 	-> fmt::Result
 	{
-		let Layout(ref lower, _) = *self;
-		lower.fmt(f)
+		let Layout(ref lower, ref upper) = *self;
+		// lower.fmt(f)
+        write!(f, "
+        lower
+        -----
+{}
+        upper
+        -----
+{}", lower, upper)
 	}
 }
 
