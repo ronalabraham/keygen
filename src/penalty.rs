@@ -36,11 +36,17 @@ impl <'a> fmt::Display for KeyPenaltyResult<'a>
 	}
 }
 
+// static BASE_PENALTY: KeyMap<f64> = KeyMap([
+//     3.0, 1.0, 1.0, 1.5, 3.0,    3.0, 1.5, 1.0, 1.0, 3.0, 4.0,
+//     0.5, 0.5, 0.0, 0.0, 1.5,    1.5, 0.0, 0.0, 0.5, 0.5, 2.0,
+//     2.0, 2.0, 1.5, 1.5, 2.5,    2.5, 1.5, 1.5, 2.0, 2.0,
+//                         0.0,    0.0]);
+
 static BASE_PENALTY: KeyMap<f64> = KeyMap([
-	3.0, 1.0, 1.0, 1.5, 3.0,    3.0, 1.5, 1.0, 1.0, 3.0, 4.0,
-	0.5, 0.5, 0.0, 0.0, 1.5,    1.5, 0.0, 0.0, 0.5, 0.5, 2.0,
-	2.0, 2.0, 1.5, 1.5, 2.5,    2.5, 1.5, 1.5, 2.0, 2.0,
-	                    0.0,    0.0]);
+    3.25, 0.50, 0.50, 2.25, 2.50,    2.50, 2.25, 0.50, 0.50, 3.25, 4.00,
+    1.00, 0.25, 0.00, 0.00, 1.50,    1.50, 0.00, 0.00, 0.25, 1.00, 2.50,
+    2.50, 2.00, 2.00, 1.25, 1.75,    1.75, 1.25, 2.00, 2.00, 2.50,
+                            0.00,    0.00]);
 
 pub fn init<'a>()
 -> Vec<KeyPenalty<'a>>
@@ -52,74 +58,80 @@ pub fn init<'a>()
 		name: "base",
 	});
 
-	// Penalise 5 points for using the same finger twice on different keys.
-	// An extra 5 points for using the centre column.
+	// 1. Penalise 5 points for using the same finger twice on different keys.
+	// An extra 5 points for using the center column.
 	penalties.push(KeyPenalty {
 		name: "same finger",
 	});
 
-	// Penalise 1 point for jumping from top to bottom row or from bottom to
+	// 2. Penalise 1 point for jumping from top to bottom row or from bottom to
 	// top row on the same hand.
 	penalties.push(KeyPenalty {
 		name: "long jump hand",
 	});
 
-	// Penalise 10 points for jumping from top to bottom row or from bottom to
-	// top row on the same finger.
+	// 3. Penalise 10 points for jumping from top to bottom row or from bottom
+    // to top row on the same finger.
 	penalties.push(KeyPenalty {
 		name: "long jump",
 	});
 
-	// Penalise 5 points for jumping from top to bottom row or from bottom to
-	// top row on consecutive fingers, except for middle finger-top row ->
+	// 4. Penalise 5 points for jumping from top to bottom row or from bottom
+    // to top row on consecutive fingers, except for middle finger-top row ->
 	// index finger-bottom row.
 	penalties.push(KeyPenalty {
 		name: "long jump consecutive",
 	});
 
-	// Penalise 10 points for awkward pinky/ring combination where the pinky
-	// reaches above the ring finger, e.g. QA/AQ, PL/LP, ZX/XZ, ;./.; on Qwerty.
+	// 5. Penalise 10 points for awkward pinky/ring combination where the pinky
+	// reaches above the ring finger, e.g. SQ/QS, XQ/QX on Qwerty.
 	penalties.push(KeyPenalty {
 		name: "pinky/ring twist",
 	});
 
-	// Penalise 20 points for reversing a roll at the end of the hand, i.e.
+	// 6. Penalise 20 points for reversing a roll at the end of the hand, i.e.
 	// using the ring, pinky, then middle finger of the same hand, or the
 	// middle, pinky, then ring of the same hand.
 	penalties.push(KeyPenalty {
 		name: "roll reversal",
 	});
 
-	// Penalise 0.5 points for using the same hand four times in a row.
+	// 7. Penalise 0.5 points for using the same hand four times in a row.
 	penalties.push(KeyPenalty {
 		name: "same hand",
 	});
 
-	// Penalise 0.5 points for alternating hands three times in a row.
+	// 8. Penalise 0.5 points for alternating hands three times in a row.
 	penalties.push(KeyPenalty {
 		name: "alternating hand",
 	});
 
-	// Penalise 0.125 points for rolling outwards.
+	// 9. Penalise 0.125 points for rolling outwards.
 	penalties.push(KeyPenalty {
 		name: "roll out",
 	});
 
-	// Award 0.125 points for rolling inwards.
+	// 10. Award 0.125 points for rolling inwards.
 	penalties.push(KeyPenalty {
 		name: "roll in",
 	});
 
-	// Penalise 3 points for jumping from top to bottom row or from bottom to
-	// top row on the same finger with a keystroke in between.
+	// 11. Penalise 3 points for jumping from top to bottom row or from bottom
+    // to top row on the same finger with a keystroke in between.
 	penalties.push(KeyPenalty {
 		name: "long jump sandwich",
 	});
 
-	// Penalise 10 points for three consecutive keystrokes going up or down the
-	// three rows of the keyboard in a roll.
+	// 12. Penalise 10 points for three consecutive keystrokes going up or down
+    // the three rows of the keyboard in a roll.
 	penalties.push(KeyPenalty {
 		name: "twist",
+	});
+
+    // 13. Penalise 15 point for pinky/ring alternation on the same hand. For
+    // example POP or SAS on Qwerty.
+	penalties.push(KeyPenalty {
+		name: "pinky/ring alernation",
 	});
 
 	penalties
@@ -278,7 +290,7 @@ fn penalize<'a, 'b>(
 		}
 
 		// 3: Long jump.
-		if curr.hand == old1.hand && curr.finger == old1.finger {
+		if curr.finger == old1.finger {
 			if curr.row == Row::Top && old1.row == Row::Bottom ||
 			   curr.row == Row::Bottom && old1.row == Row::Top {
 				let penalty = 10.0 * count;
@@ -325,9 +337,7 @@ fn penalize<'a, 'b>(
 		}
 
 		// 9: Roll out.
-		if curr.hand == old1.hand &&
-		   old1.finger != Finger::Thumb &&
-		   is_roll_out(curr.finger, old1.finger) {
+		if is_roll_out(curr.finger, old1.finger) {
 			let penalty = 0.125 * count;
 			if detailed {
 				*result[9].high_keys.entry(slice2).or_insert(0.0) += penalty;
@@ -337,7 +347,7 @@ fn penalize<'a, 'b>(
 		}
 
 		// 10: Roll in.
-		if curr.hand == old1.hand && is_roll_in(curr.finger, old1.finger) {
+		if is_roll_in(curr.finger, old1.finger) {
 			let penalty = -0.125 * count;
 			if detailed {
 				*result[10].high_keys.entry(slice2).or_insert(0.0) += penalty;
@@ -354,10 +364,15 @@ fn penalize<'a, 'b>(
 	};
 
 	if curr.hand == old1.hand && old1.hand == old2.hand {
+        let slice3 = &string[(len - 3)..len];
+
 		// 6: Roll reversal.
-		if (curr.finger == Finger::Middle && old1.finger == Finger::Pinky && old2.finger == Finger::Ring) ||
-		    curr.finger == Finger::Ring && old1.finger == Finger::Pinky && old2.finger == Finger::Middle {
-			let slice3 = &string[(len - 3)..len];
+		if (curr.finger == Finger::Middle &&
+            old1.finger == Finger::Pinky &&
+            old2.finger == Finger::Ring) ||
+		   (curr.finger == Finger::Ring &&
+            old1.finger == Finger::Pinky &&
+            old2.finger == Finger::Middle) {
 			let penalty = 20.0 * count;
 			if detailed {
 				*result[6].high_keys.entry(slice3).or_insert(0.0) += penalty;
@@ -371,7 +386,6 @@ fn penalize<'a, 'b>(
 		    (curr.row == Row::Bottom && old1.row == Row::Home && old2.row == Row::Top)) &&
 		   ((is_roll_out(curr.finger, old1.finger) && is_roll_out(old1.finger, old2.finger)) ||
 		   	(is_roll_in(curr.finger, old1.finger) && is_roll_in(old1.finger, old2.finger))) {
-			let slice3 = &string[(len - 3)..len];
 			let penalty = 10.0 * count;
 			if detailed {
 				*result[12].high_keys.entry(slice3).or_insert(0.0) += penalty;
@@ -379,15 +393,30 @@ fn penalize<'a, 'b>(
 			}
 			total += penalty;
 		}
+
+        // 13: Pinky/ring alternation.
+		if (curr.finger == Finger::Ring &&
+            old1.finger == Finger::Pinky &&
+            old2.finger == Finger::Ring) ||
+		   (curr.finger == Finger::Pinky &&
+            old1.finger == Finger::Ring &&
+            old2.finger == Finger::Pinky) {
+			let penalty = 15.0 * count;
+			if detailed {
+				*result[13].high_keys.entry(slice3).or_insert(0.0) += penalty;
+				result[13].total += penalty;
+			}
+			total += penalty;
+        }
 	}
 
 	// 11: Long jump sandwich.
 	if curr.hand == old2.hand && curr.finger == old2.finger {
 		if curr.row == Row::Top && old2.row == Row::Bottom ||
 		   curr.row == Row::Bottom && old2.row == Row::Top {
+            let slice3 = &string[(len - 3)..len];
 			let penalty = 3.0 * count;
 			if detailed {
-				let slice3 = &string[(len - 3)..len];
 				*result[11].high_keys.entry(slice3).or_insert(0.0) += penalty;
 				result[11].total += penalty;
 			}

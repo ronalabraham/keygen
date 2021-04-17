@@ -98,7 +98,7 @@ fn main()
 
 	match command.as_ref() {
 		"run" => run(&corpus[..], layout, debug, top, swaps),
-		"run-ref" => run_ref(&corpus[..]),
+		"run-ref" => run_ref(&corpus[..], layout),
 		"refine" => refine(&corpus[..], layout, debug, top, swaps),
 		_ => print_usage(progname, opts),
 	};
@@ -116,7 +116,7 @@ fn run(s: &str, layout: &layout::Layout, debug: bool, top: usize, swaps: usize)
 	// }
 }
 
-fn run_ref(s: &str)
+fn run_ref(s: &str, layout: &layout::Layout)
 {
 	let penalties = penalty::init();
 	let init_pos_map = layout::INIT_LAYOUT.get_position_map();
@@ -168,9 +168,9 @@ fn run_ref(s: &str)
 	simulator::print_result(&layout::ARENSITO_LAYOUT, &penalty);
 	println!("");
 
-	let penalty = penalty::calculate_penalty(&quartads, len, &layout::INIT_LAYOUT, &penalties, true);
+	let penalty = penalty::calculate_penalty(&quartads, len, layout, &penalties, true);
 	println!("Reference: INITIAL");
-	simulator::print_result(&layout::INIT_LAYOUT, &penalty);
+	simulator::print_result(layout, &penalty);
 }
 
 fn refine(s: &str, layout: &layout::Layout, debug: bool, top: usize, swaps: usize)

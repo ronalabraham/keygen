@@ -75,12 +75,13 @@ pub enum Row
 #[derive(Clone, Copy)]
 pub struct KeyPress
 {
-	pub kc:     char,
-	pub pos:    usize,
-	pub finger: Finger,
-	pub hand:   Hand,
-	pub row:    Row,
-	pub center: bool,
+    pub kc:     char,    // the actual character (e.g. "a", "J", "<".)
+    pub pos:    usize,   // position (0 to 33); see KeyMap above
+    pub finger: Finger,
+    pub hand:   Hand,
+    pub row:    Row,
+    pub center: bool,    // 'true' if center column, 'false' otherwise
+    pub outer:  bool,    // 'true' if right outer column, 'false' otherwise
 }
 
 /* ------- *
@@ -193,10 +194,10 @@ pub static ARENSITO_LAYOUT: Layout = Layout(
 // 	true,  true,  true,  true,  true,  true,  true,  true,  true,  true,
 // 	false]));
 static SWAPPABLE_MAP: KeyMap<bool>= KeyMap([
-    true,  true,  true,  true,  true,       true,  true,  true,  true,  true,  false,
+    true,  true,  true,  true,  true,       true,  true,  true,  true,  true,  true,
     true,  true,  true,  true,  true,       true,  true,  true,  true,  true,  true,
     true,  true,  true,  true,  true,       true,  true,  true,  true,  true,
-                                true,       true
+                                true,       false
 ]);
 
 fn num_swappable(swappable_map: &KeyMap<bool>) -> usize {
@@ -259,7 +260,13 @@ static KEY_CENTER_COLUMN: KeyMap<bool> = KeyMap([
 	false, false, false, false, true,    true, false, false, false, false, false,
 	false, false, false, false, true,    true, false, false, false, false, false,
 	false, false, false, false, true,    true, false, false, false, false,
-	false, false]);
+	                            false,   false]);
+
+static KEY_OUTER_COLUMN: KeyMap<bool> = KeyMap([
+	false, false, false, false, false,    false, false, false, false, false, true,
+	false, false, false, false, false,    false, false, false, false, false, true,
+	false, false, false, false, false,    false, false, false, false, false,
+	                            false,    false]);
 
 pub static KP_NONE: Option<KeyPress> = None;
 
@@ -344,6 +351,7 @@ impl Layer
 		let KeyMap(ref hands) = KEY_HANDS;
 		let KeyMap(ref rows) = KEY_ROWS;
 		let KeyMap(ref centers) = KEY_CENTER_COLUMN;
+		let KeyMap(ref outers) = KEY_OUTER_COLUMN;
 		for (i, c) in layer.into_iter().enumerate() {
 			if *c < (128 as char) {
 				map[*c as usize] = Some(KeyPress {
@@ -353,6 +361,7 @@ impl Layer
 					hand: hands[i],
 					row: rows[i],
 					center: centers[i],
+					outer: outers[i],
 				});
 			}
 		}

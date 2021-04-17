@@ -112,12 +112,13 @@ pub fn refine<'a>(
 	loop {
 		// Test every layout within `num_swaps` swaps of the initial layout.
 		let mut best_layouts: LinkedList<BestLayoutsEntry> = LinkedList::new();
-		let permutations = layout::LayoutPermutations::new(init_layout, num_swaps);
+		let permutations = layout::LayoutPermutations::new(&curr_layout, num_swaps);
 		for (i, layout) in permutations.enumerate() {
 			let penalty = penalty::calculate_penalty(&quartads, len, &layout, penalties, false);
 
 			if debug {
 				println!("Iteration {}: {}", i, penalty.1);
+                print_result(&layout, &penalty);
 			}
 
 			// Insert this layout into best layouts.
@@ -136,7 +137,7 @@ pub fn refine<'a>(
 		// Print the top layouts.
 		for entry in best_layouts.iter() {
 			let ref layout = entry.layout;
-			let penalty = penalty::calculate_penalty(&quartads, len, &layout, penalties, true);
+			let penalty = penalty::calculate_penalty(&quartads, len, &layout, penalties, false);
 			println!("");
 			print_result(&layout, &penalty);
 		}
@@ -144,8 +145,10 @@ pub fn refine<'a>(
 		// Keep going until swapping doesn't get us any more improvements.
 		let best = best_layouts.pop_front().unwrap();
 		if curr_penalty <= best.penalty {
+			println!("We have a winner!");
 			break;
 		} else {
+			println!("Let's keep looking...");
 			curr_layout = best.layout;
 			curr_penalty = best.penalty;
 		}
@@ -153,7 +156,8 @@ pub fn refine<'a>(
 
 	println!("");
 	println!("Ultimate winner:");
-	println!("{}", curr_layout);
+    let best_penalty = penalty::calculate_penalty(&quartads, len, &curr_layout, penalties, true);
+    print_result(&curr_layout, &best_penalty);
 }
 
 pub fn print_result<'a>(
