@@ -20,33 +20,33 @@ const KN: f64   = K / (N as f64);
 fn temperature(i: usize)
 -> f64
 {
-	T0 * f64::exp(-(i as f64) * KN)
+    T0 * f64::exp(-(i as f64) * KN)
 }
 
 // p(dE, i) = p0 exp(-dE/T(i))
 fn cutoff_p(de: f64, i: usize)
 -> f64
 {
-	let t = temperature(i);
-	P0 * f64::exp(-de / t)
+    let t = temperature(i);
+    P0 * f64::exp(-de / t)
 }
 
 // For positive dE, accept if r < p_dE where r ~ Uniform(0, 1)
 pub fn accept_transition(de: f64, i: usize)
 -> bool
 {
-	let mut rng = rand::thread_rng();
-	if de < 0.0 {
-		true
-	} else {
-		let p_de = cutoff_p(de, i);
-		let r = rng.gen::<f64>();
-		r < p_de
-	}
+    let mut rng = rand::thread_rng();
+    if de < 0.0 {
+        true
+    } else {
+        let p_de = cutoff_p(de, i);
+        let r = rng.gen::<f64>();
+        r < p_de
+    }
 }
 
 pub fn get_simulation_range()
 -> Range<usize>
 {
-	1..(N+1)
+    1..(N+1)
 }
