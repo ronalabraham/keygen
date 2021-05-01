@@ -32,7 +32,7 @@ fn main()
     let command = &args[1];
     let matches = match opts.parse(&args[2..]) {
         Ok(m) => { m }
-        Err(f) => { panic!(f.to_string()) }
+        Err(f) => { panic!("{}", f) }
     };
 
     // --help
