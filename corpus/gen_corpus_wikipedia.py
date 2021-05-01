@@ -44,7 +44,7 @@ typable = re.compile(
     r"\'\"\,\<\.\>\/\?\!\@\#\$\%\^\&\*\(\) \n]"
 )
 with open("wikipedia.txt", "w") as f:
-    for article in args.articles[-1:]:  # TODO: do all articles
+    for article in args.articles[-1:]:
         page = wikipedia.page(article)
         for line in page.content.splitlines(keepends=True):
             match = heading.match(line)

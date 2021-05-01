@@ -58,55 +58,60 @@ pub fn init<'a>()
         name: "base",
     });
 
-    // 1. Penalise 5 points for using the same finger twice on different keys.
-    // An extra 5 points for using the center column.
+    // 1. Penalize 5 points for using the same finger twice on different keys.
+    // An extra 10 points for using the outer right keys. Note: the penalty for
+    // consecutive index finger usage is significantly more nuanced because
+    // some patterns (e.g. G->R on Qwerty) can be typed easily by moving the
+    // middle finger over to the index finger's place.
     penalties.push(KeyPenalty {
         name: "same finger",
     });
 
-    // 2. Penalise 1 point for jumping from top to bottom row or from bottom to
+    // 2. Penalize 1 point for jumping from top to bottom row or from bottom to
     // top row on the same hand.
     penalties.push(KeyPenalty {
         name: "long jump hand",
     });
 
-    // 3. Penalise 10 points for jumping from top to bottom row or from bottom
-    // to top row on the same finger.
+    // 3. Penalize 10 points for jumping from top to bottom row or from bottom
+    // to top row on the same finger. Note: there is no penalty for the index
+    // finger doing a "long jump" because the difficulty is entirely captured
+    // by the corresponding "same finger" penalty.
     penalties.push(KeyPenalty {
         name: "long jump",
     });
 
-    // 4. Penalise 5 points for jumping from top to bottom row or from bottom
+    // 4. Penalize 5 points for jumping from top to bottom row or from bottom
     // to top row on consecutive fingers, except for middle finger-top row ->
     // index finger-bottom row.
     penalties.push(KeyPenalty {
         name: "long jump consecutive",
     });
 
-    // 5. Penalise 10 points for awkward pinky/ring combination where the pinky
+    // 5. Penalize 10 points for awkward pinky/ring combination where the pinky
     // reaches above the ring finger, e.g. SQ/QS, XQ/QX on Qwerty.
     penalties.push(KeyPenalty {
         name: "pinky/ring twist",
     });
 
-    // 6. Penalise 20 points for reversing a roll at the end of the hand, i.e.
+    // 6. Penalize 20 points for reversing a roll at the end of the hand, i.e.
     // using the ring, pinky, then middle finger of the same hand, or the
     // middle, pinky, then ring of the same hand.
     penalties.push(KeyPenalty {
         name: "roll reversal",
     });
 
-    // 7. Penalise 0.5 points for using the same hand four times in a row.
+    // 7. Penalize 0.5 points for using the same hand four times in a row.
     penalties.push(KeyPenalty {
         name: "same hand",
     });
 
-    // 8. Penalise 0.5 points for alternating hands three times in a row.
+    // 8. Penalize 0.5 points for alternating hands three times in a row.
     penalties.push(KeyPenalty {
         name: "alternating hand",
     });
 
-    // 9. Penalise 0.125 points for rolling outwards.
+    // 9. Penalize 0.125 points for rolling outwards.
     penalties.push(KeyPenalty {
         name: "roll out",
     });
@@ -116,19 +121,19 @@ pub fn init<'a>()
         name: "roll in",
     });
 
-    // 11. Penalise 3 points for jumping from top to bottom row or from bottom
+    // 11. Penalize 3 points for jumping from top to bottom row or from bottom
     // to top row on the same finger with a keystroke in between.
     penalties.push(KeyPenalty {
         name: "long jump sandwich",
     });
 
-    // 12. Penalise 10 points for three consecutive keystrokes going up or down
+    // 12. Penalize 10 points for three consecutive keystrokes going up or down
     // the three rows of the keyboard in a roll.
     penalties.push(KeyPenalty {
         name: "twist",
     });
 
-    // 13. Penalise 15 point for pinky/ring alternation on the same hand. For
+    // 13. Penalize 15 point for pinky/ring alternation on the same hand. For
     // example POP or SAS on Qwerty.
     penalties.push(KeyPenalty {
         name: "pinky/ring alernation",
@@ -268,8 +273,7 @@ fn penalize<'a, 'b>(
 
         // 1: Same finger.
         if curr.finger == old1.finger && curr.pos != old1.pos {
-            let penalty = 5.0 + if curr.center { 5.0 } else { 0.0 }
-                              + if old1.center { 5.0 } else { 0.0 };
+            let penalty = calculate_same_finger_penalty(curr, old1);
             let penalty = penalty * count;
             if detailed {
                 *result[1].high_keys.entry(slice2).or_insert(0.0) += penalty;
@@ -290,7 +294,7 @@ fn penalize<'a, 'b>(
         }
 
         // 3: Long jump.
-        if curr.finger == old1.finger {
+        if curr.finger == old1.finger && curr.finger != Finger::Index {
             if curr.row == Row::Top && old1.row == Row::Bottom ||
                curr.row == Row::Bottom && old1.row == Row::Top {
                 let penalty = 10.0 * count;
@@ -451,6 +455,134 @@ fn penalize<'a, 'b>(
     }
 
     total
+}
+
+fn calculate_same_finger_penalty(curr: &KeyPress, old1: &KeyPress)
+-> f64 {
+
+    // This penalty should only be calculated if we consecutively use the
+    // same finger on the same hand, but for a different key.
+    assert!(curr.hand == old1.hand);
+    assert!(curr.finger == old1.finger);
+    assert!(curr.pos != old1.pos);
+
+    if curr.finger == Finger::Index {
+        // In the following comments, all letter combinations are on Qwerty.
+
+        // gr/rg/hu/uh
+        if curr.pos == 15 && old1.pos == 3 ||
+           curr.pos == 3 && old1.pos == 15 ||
+           curr.pos == 16 && old1.pos == 6 ||
+           curr.pos == 6 && old1.pos == 16 {
+            return 2.;
+        }
+        // fg/gf/hj/jh
+        if curr.pos == 14 && old1.pos == 15 ||
+           curr.pos == 15 && old1.pos == 14 ||
+           curr.pos == 16 && old1.pos == 17 ||
+           curr.pos == 17 && old1.pos == 16 {
+            return 3.;
+        }
+        // fr/rf/ju/uj
+        if curr.pos == 14 && old1.pos == 3 ||
+           curr.pos == 3 && old1.pos == 14 ||
+           curr.pos == 17 && old1.pos == 6 ||
+           curr.pos == 6 && old1.pos == 17 {
+            return 4.;
+        }
+        // vf/fv/mj/jm
+        if curr.pos == 25 && old1.pos == 14 ||
+           curr.pos == 14 && old1.pos == 25 ||
+           curr.pos == 28 && old1.pos == 17 ||
+           curr.pos == 17 && old1.pos == 28 {
+            return 5.;
+        }
+        // bf/fb/nj/jn
+        if curr.pos == 26 && old1.pos == 14 ||
+           curr.pos == 14 && old1.pos == 26 ||
+           curr.pos == 27 && old1.pos == 17 ||
+           curr.pos == 17 && old1.pos == 27 {
+            return 7.;
+        }
+        // rt/tr/yu/uy
+        if curr.pos == 3 && old1.pos == 4 ||
+           curr.pos == 4 && old1.pos == 3 ||
+           curr.pos == 5 && old1.pos == 6 ||
+           curr.pos == 6 && old1.pos == 5 {
+            return 8.;
+        }
+        // bv/vb/nm/mn
+        if curr.pos == 26 && old1.pos == 25 ||
+           curr.pos == 25 && old1.pos == 26 ||
+           curr.pos == 27 && old1.pos == 28 ||
+           curr.pos == 28 && old1.pos == 27 {
+            return 11.;
+        }
+        // ft/tf/jy/yj
+        if curr.pos == 14 && old1.pos == 4 ||
+           curr.pos == 4 && old1.pos == 14 ||
+           curr.pos == 17 && old1.pos == 5 ||
+           curr.pos == 5 && old1.pos == 17 {
+            return 13.;
+        }
+        // br/rb/nu/un
+        if curr.pos == 26 && old1.pos == 3 ||
+           curr.pos == 3 && old1.pos == 26 ||
+           curr.pos == 27 && old1.pos == 6 ||
+           curr.pos == 6 && old1.pos == 27 {
+            return 14.;
+        }
+        // vr/rv/mu/um
+        if curr.pos == 25 && old1.pos == 3 ||
+           curr.pos == 3 && old1.pos == 25 ||
+           curr.pos == 28 && old1.pos == 6 ||
+           curr.pos == 6 && old1.pos == 28 {
+            return 15.;
+        }
+        // vg/gv/mh/hm
+        if curr.pos == 25 && old1.pos == 15 ||
+           curr.pos == 15 && old1.pos == 25 ||
+           curr.pos == 28 && old1.pos == 16 ||
+           curr.pos == 16 && old1.pos == 28 {
+            return 17.;
+        }
+        // bg/gb/nh/hn
+        if curr.pos == 26 && old1.pos == 15 ||
+           curr.pos == 15 && old1.pos == 26 ||
+           curr.pos == 27 && old1.pos == 16 ||
+           curr.pos == 16 && old1.pos == 27 {
+            return 18.;
+        }
+        // gt/tg/hy/yh
+        if curr.pos == 15 && old1.pos == 4 ||
+           curr.pos == 4 && old1.pos == 15 ||
+           curr.pos == 16 && old1.pos == 5 ||
+           curr.pos == 5 && old1.pos == 16 {
+            return 20.;
+        }
+        // bt/tb/ny/yn
+        if curr.pos == 26 && old1.pos == 4 ||
+           curr.pos == 4 && old1.pos == 26 ||
+           curr.pos == 27 && old1.pos == 5 ||
+           curr.pos == 5 && old1.pos == 27 {
+            return 25.;
+        }
+        // vt/tv/my/ym
+        if curr.pos == 25 && old1.pos == 4 ||
+           curr.pos == 4 && old1.pos == 25 ||
+           curr.pos == 28 && old1.pos == 5 ||
+           curr.pos == 5 && old1.pos == 28 {
+            return 28.;
+        }
+
+        assert!(false, "All index finger pairs must be covered by now");
+    }
+
+    assert!(!curr.center,
+            "All center column key presses must be covered by now.");
+
+    // Outer pinky usage is painful; 10 points to Slytherin.
+    5.0 + if curr.outer { 10. } else { 0. } + if old1.outer { 10. } else { 0. }
 }
 
 fn is_roll_out(curr: Finger, prev: Finger) -> bool {
