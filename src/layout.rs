@@ -17,6 +17,7 @@ use self::rand::random;
 //
 //             32 | 33 (thumb keys)
 
+#[derive(Hash, Eq, PartialEq, Debug)]
 pub struct KeyMap<T>(pub [T; 34]);
 
 impl <T: Copy> Clone for KeyMap<T>
@@ -28,10 +29,10 @@ impl <T: Copy> Clone for KeyMap<T>
     }
 }
 
-#[derive(Clone)]
+#[derive(Hash, Eq, PartialEq, Debug, Clone)]
 pub struct Layer(KeyMap<char>);
 
-#[derive(Clone)]
+#[derive(Hash, Eq, PartialEq, Debug, Clone)]
 pub struct Layout(Layer, Layer);
 
 pub struct LayoutPermutations

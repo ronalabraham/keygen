@@ -5,6 +5,7 @@ extern crate rand;
 
 use self::rand::random;
 use std::cmp::Ordering;
+use std::collections::HashSet;
 use std::collections::LinkedList;
 
 use layout;
@@ -109,13 +110,23 @@ pub fn refine<'a>(
     let mut curr_layout = init_layout.clone();
     let mut curr_penalty = penalty.1;
 
+    // Keep track of visited layouts for efficiency.
+    let mut visited_layouts = HashSet::new();
+
     loop {
         // Test every layout within `num_swaps` swaps of the initial layout.
         let mut best_layouts: LinkedList<BestLayoutsEntry> = LinkedList::new();
         let permutations = layout::LayoutPermutations::new(&curr_layout, num_swaps);
         for (i, layout) in permutations.enumerate() {
-            let penalty = penalty::calculate_penalty(&quartads, len, &layout, penalties, false);
+            // Skip already-visited layouts.
+            if visited_layouts.contains(&layout) {
+                continue;
+            }
+            let visited_layout = layout.clone();
+            visited_layouts.insert(visited_layout);
 
+            // Calculate penalty.
+            let penalty = penalty::calculate_penalty(&quartads, len, &layout, penalties, false);
             if debug {
                 println!("Iteration {}: {}", i, penalty.1);
                 print_result(&layout, &penalty);
