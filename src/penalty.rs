@@ -43,9 +43,9 @@ impl <'a> fmt::Display for KeyPenaltyResult<'a>
 //                         0.0,    0.0]);
 
 static BASE_PENALTY: KeyMap<f64> = KeyMap([
-    3.25, 0.50, 0.50, 2.25, 2.50,    2.50, 2.25, 0.50, 0.50, 3.25, 4.00,
-    1.00, 0.25, 0.00, 0.00, 1.50,    1.50, 0.00, 0.00, 0.25, 1.00, 2.50,
-    2.50, 2.00, 2.00, 1.25, 1.75,    1.75, 1.25, 2.00, 2.00, 2.50,
+    3.50, 0.70, 0.70, 1.50, 3.00,    3.00, 1.50, 0.70, 0.70, 3.50, 4.00,
+    0.60, 0.25, 0.00, 0.00, 1.25,    1.25, 0.00, 0.00, 0.25, 0.60, 3.00,
+    2.50, 2.00, 1.50, 1.00, 2.50,    2.50, 1.00, 1.50, 2.00, 2.50,
                             0.00,    0.00]);
 
 pub fn init<'a>()
@@ -58,7 +58,17 @@ pub fn init<'a>()
         name: "base",
     });
 
-    // 1. Penalize 5 points for using the same finger twice on different keys.
+    // 1. Penalize 0.5 points for using the same hand four times in a row.
+    penalties.push(KeyPenalty {
+        name: "same hand",
+    });
+
+    // 2. Penalize 0.5 points for alternating hands two times in a row.
+    penalties.push(KeyPenalty {
+        name: "alternating hand",
+    });
+
+    // 3. Penalize 5 points for using the same finger twice on different keys.
     // An extra 10 points for using the outer right keys. Note: the penalty for
     // consecutive index finger usage is significantly more nuanced because
     // some patterns (e.g. G->R on Qwerty) can be typed easily by moving the
@@ -68,13 +78,13 @@ pub fn init<'a>()
         name: "same finger",
     });
 
-    // 2. Penalize 1 point for jumping from top to bottom row or from bottom to
+    // 4. Penalize 1 point for jumping from top to bottom row or from bottom to
     // top row on the same hand.
     penalties.push(KeyPenalty {
         name: "long jump hand",
     });
 
-    // 3. Penalize 10 points for jumping from top to bottom row or from bottom
+    // 5. Penalize 10 points for jumping from top to bottom row or from bottom
     // to top row on the same finger. Note: there is no penalty for the index
     // finger doing a "long jump" because the difficulty is entirely captured
     // by the corresponding "same finger" penalty. See the weights.xlsx file
@@ -83,35 +93,25 @@ pub fn init<'a>()
         name: "long jump",
     });
 
-    // 4. Penalize some points for jumping from top to bottom row or from
+    // 6. Penalize some points for jumping from top to bottom row or from
     // bottom to top row on consecutive fingers. The exact penalty is nuanced;
     // see the weights.xlsx file for details.
     penalties.push(KeyPenalty {
         name: "long jump consecutive",
     });
 
-    // 5. Penalize some points for awkward pinky/ring combination where the
+    // 7. Penalize some points for awkward pinky/ring combination where the
     // pinky reaches above the ring finger, e.g. SQ/QS, XQ/QX on Qwerty. The
     // exact penalty is nuanced; see the weights.xlsx file for details.
     penalties.push(KeyPenalty {
         name: "pinky/ring twist",
     });
 
-    // 6. Penalize 20 points for reversing a roll at the end of the hand, i.e.
+    // 8. Penalize 20 points for reversing a roll at the end of the hand, i.e.
     // using the ring, pinky, then middle finger of the same hand, or the
     // middle, pinky, then ring of the same hand.
     penalties.push(KeyPenalty {
         name: "roll reversal",
-    });
-
-    // 7. Penalize 0.5 points for using the same hand four times in a row.
-    penalties.push(KeyPenalty {
-        name: "same hand",
-    });
-
-    // 8. Penalize 0.5 points for alternating hands three times in a row.
-    penalties.push(KeyPenalty {
-        name: "alternating hand",
     });
 
     // 9. Penalize 0.125 points for rolling outwards.
@@ -274,61 +274,61 @@ fn penalize<'a, 'b>(
     if curr.hand == old1.hand {
         let slice2 = &string[(len - 2)..len];
 
-        // 1: Same finger.
+        // 3: Same finger.
         if curr.finger == old1.finger && curr.pos != old1.pos {
             let penalty = calculate_same_finger_penalty(curr, old1);
             let penalty = penalty * count;
             if detailed && penalty > 0. {
-                *result[1].high_keys.entry(slice2).or_insert(0.0) += penalty;
-                result[1].total += penalty;
+                *result[3].high_keys.entry(slice2).or_insert(0.0) += penalty;
+                result[3].total += penalty;
             }
             total += penalty;
         }
 
-        // 2: Long jump hand.
+        // 4: Long jump hand.
         if curr.row == Row::Top && old1.row == Row::Bottom ||
            curr.row == Row::Bottom && old1.row == Row::Top {
             let penalty = count;
             if detailed {
-                *result[2].high_keys.entry(slice2).or_insert(0.0) += penalty;
-                result[2].total += penalty;
-            }
-            total += penalty;
-        }
-
-        // 3: Long jump.
-        if curr.finger == old1.finger && curr.finger != Finger::Index {
-            if curr.row == Row::Top && old1.row == Row::Bottom ||
-               curr.row == Row::Bottom && old1.row == Row::Top {
-                let penalty = 10.0 * count;
-                if detailed {
-                    *result[3].high_keys.entry(slice2).or_insert(0.0) += penalty;
-                    result[3].total += penalty;
-                }
-                total += penalty;
-            }
-        }
-
-        // 4: Long jump consecutive.
-        if curr.row == Row::Top && old1.row == Row::Bottom ||
-           curr.row == Row::Bottom && old1.row == Row::Top {
-            let penalty = calculate_long_jump_consecutive_penalty(curr, old1);
-            let penalty = penalty * count;
-            if detailed && penalty > 0. {
                 *result[4].high_keys.entry(slice2).or_insert(0.0) += penalty;
                 result[4].total += penalty;
             }
             total += penalty;
         }
 
-        // 5: Pinky/ring twist.
+        // 5: Long jump.
+        if curr.finger == old1.finger && curr.finger != Finger::Index {
+            if curr.row == Row::Top && old1.row == Row::Bottom ||
+               curr.row == Row::Bottom && old1.row == Row::Top {
+                let penalty = 10.0 * count;
+                if detailed {
+                    *result[5].high_keys.entry(slice2).or_insert(0.0) += penalty;
+                    result[5].total += penalty;
+                }
+                total += penalty;
+            }
+        }
+
+        // 6: Long jump consecutive.
+        if curr.row == Row::Top && old1.row == Row::Bottom ||
+           curr.row == Row::Bottom && old1.row == Row::Top {
+            let penalty = calculate_long_jump_consecutive_penalty(curr, old1);
+            let penalty = penalty * count;
+            if detailed && penalty > 0. {
+                *result[6].high_keys.entry(slice2).or_insert(0.0) += penalty;
+                result[6].total += penalty;
+            }
+            total += penalty;
+        }
+
+        // 7: Pinky/ring twist.
         if (curr.finger == Finger::Ring && old1.finger == Finger::Pinky) ||
            (curr.finger == Finger::Pinky && old1.finger == Finger::Ring) {
             let penalty = calculate_pinky_ring_twist(curr, old1);
             let penalty = penalty * count;
             if detailed && penalty > 0. {
-                *result[5].high_keys.entry(slice2).or_insert(0.0) += penalty;
-                result[5].total += penalty;
+                *result[7].high_keys.entry(slice2).or_insert(0.0) += penalty;
+                result[7].total += penalty;
             }
             total += penalty;
         }
@@ -363,7 +363,7 @@ fn penalize<'a, 'b>(
     if curr.hand == old1.hand && old1.hand == old2.hand {
         let slice3 = &string[(len - 3)..len];
 
-        // 6: Roll reversal.
+        // 8: Roll reversal.
         if (curr.finger == Finger::Middle &&
             old1.finger == Finger::Pinky &&
             old2.finger == Finger::Ring) ||
@@ -372,8 +372,8 @@ fn penalize<'a, 'b>(
             old2.finger == Finger::Middle) {
             let penalty = 20.0 * count;
             if detailed {
-                *result[6].high_keys.entry(slice3).or_insert(0.0) += penalty;
-                result[6].total += penalty;
+                *result[8].high_keys.entry(slice3).or_insert(0.0) += penalty;
+                result[8].total += penalty;
             }
             total += penalty;
         }
@@ -428,21 +428,21 @@ fn penalize<'a, 'b>(
     };
 
     if curr.hand == old1.hand && old1.hand == old2.hand && old2.hand == old3.hand {
-        // 7: Same hand.
+        // 1: Same hand.
         let slice4 = &string[(len - 4)..len];
         let penalty = 0.5 * count;
         if detailed {
-            *result[7].high_keys.entry(slice4).or_insert(0.0) += penalty;
-            result[7].total += penalty;
+            *result[1].high_keys.entry(slice4).or_insert(0.0) += penalty;
+            result[1].total += penalty;
         }
         total += penalty;
     } else if curr.hand != old1.hand && old1.hand != old2.hand && old2.hand != old3.hand {
-        // 8: Alternating hand.
+        // 2: Alternating hand.
         let slice4 = &string[(len - 4)..len];
         let penalty = 0.5 * count;
         if detailed {
-            *result[8].high_keys.entry(slice4).or_insert(0.0) += penalty;
-            result[8].total += penalty;
+            *result[2].high_keys.entry(slice4).or_insert(0.0) += penalty;
+            result[2].total += penalty;
         }
         total += penalty;
     }
