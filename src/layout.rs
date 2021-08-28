@@ -9,13 +9,13 @@ use self::rand::random;
  * TYPES *
  * ----- */
 
-// KeyMap format:
-//    LEFT HAND   |    RIGHT HAND
-//  0  1  2  3  4 |  5  6  7  8  9 10
-// 11 12 13 14 15 | 16 17 18 19 20 21
-// 22 23 24 25 26 | 27 28 29 30 31
+// KeyMap format (qwerty):
+// LEFT HAND                     | RIGHT HAND
+//  0(q)  1(w)  2(e)  3(r)  4(t) |  5(y)  6(u)  7(i)  8(o)  9(p) 10(\)
+// 11(a) 12(s) 13(d) 14(f) 15(g) | 16(h) 17(j) 18(k) 19(l) 20(;) 21(')
+// 22(z) 23(x) 24(c) 25(v) 26(b) | 27(n) 28(m) 29(,) 30(.) 31(/)
 //
-//             32 | 33 (thumb keys)
+//                         32    | 33    (thumb keys)
 
 #[derive(Hash, Eq, PartialEq, Debug)]
 pub struct KeyMap<T>(pub [T; 34]);

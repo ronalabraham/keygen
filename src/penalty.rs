@@ -74,61 +74,49 @@ pub fn init<'a>()
         name: "same finger",
     });
 
-    // 3. Penalize 1 point for jumping from top to bottom row or from bottom to
-    // top row on the same hand.
+    // 3. Penalize some points for using certain finger combinations (but not
+    // the same finger) on the same hand. The actual penalty is nuanced and is
+    // based on the amount of stretching or motion involved. See the
+    // weigths.xlsx file for details.
     penalties.push(KeyPenalty {
-        name: "long jump hand",
+        name: "stretch",
     });
 
-    // 4. Penalize some points for jumping from top to bottom row or from
-    // bottom to top row on consecutive fingers. The exact penalty is nuanced;
-    // see the weights.xlsx file for details.
-    penalties.push(KeyPenalty {
-        name: "long jump consecutive",
-    });
-
-    // 5. Penalize some points for awkward pinky/ring combination where the
-    // pinky reaches above the ring finger, e.g. SQ/QS, XQ/QX on Qwerty. The
-    // exact penalty is nuanced; see the weights.xlsx file for details.
-    penalties.push(KeyPenalty {
-        name: "pinky/ring twist",
-    });
-
-    // 6. Penalize 0.1 points for using the same hand four times in a row.
+    // 4. Penalize 0.1 points for using the same hand four times in a row.
     penalties.push(KeyPenalty {
         name: "same hand",
     });
 
-    // 7. Penalize 20 points for reversing a roll at the end of the hand, i.e.
+    // 5. Penalize 20 points for reversing a roll at the end of the hand, i.e.
     // using the ring, pinky, then middle finger of the same hand, or the
     // middle, pinky, then ring of the same hand.
     penalties.push(KeyPenalty {
         name: "roll reversal",
     });
 
-    // 8. Penalize 0.125 points for rolling outwards.
+    // 6. Penalize 0.125 points for rolling outwards.
     penalties.push(KeyPenalty {
         name: "roll out",
     });
 
-    // 9. Award 0.125 points for rolling inwards.
+    // 7. Award 0.125 points for rolling inwards.
     penalties.push(KeyPenalty {
         name: "roll in",
     });
 
-    // 10. Penalize 3 points for jumping from top to bottom row or from bottom
+    // 8. Penalize 3 points for jumping from top to bottom row or from bottom
     // to top row on the same finger with a keystroke in between.
     penalties.push(KeyPenalty {
         name: "long jump sandwich",
     });
 
-    // 11. Penalize 10 points for three consecutive keystrokes going up or down
+    // 9. Penalize 10 points for three consecutive keystrokes going up or down
     // the three rows of the keyboard in a roll.
     penalties.push(KeyPenalty {
         name: "twist",
     });
 
-    // 12. Penalize 15 point for pinky/ring alternation on the same hand. For
+    // 10. Penalize 15 point for pinky/ring alternation on the same hand. For
     // example POP or SAS on Qwerty.
     penalties.push(KeyPenalty {
         name: "pinky/ring alternation",
@@ -277,57 +265,33 @@ fn penalize<'a, 'b>(
             total += penalty;
         }
 
-        // 3: Long jump hand.
-        if curr.row == Row::Top && old1.row == Row::Bottom ||
-           curr.row == Row::Bottom && old1.row == Row::Top {
-            let penalty = count;
-            if detailed {
+        // 3: Stretch.
+        if curr.finger != old1.finger {
+            let penalty = calculate_stretch_penalty(curr, old1);
+            let penalty = penalty * count;
+            if detailed && penalty > 0. {
                 *result[3].high_keys.entry(slice2).or_insert(0.0) += penalty;
                 result[3].total += penalty;
             }
             total += penalty;
         }
 
-        // 4: Long jump consecutive.
-        if curr.row == Row::Top && old1.row == Row::Bottom ||
-           curr.row == Row::Bottom && old1.row == Row::Top {
-            let penalty = calculate_long_jump_consecutive_penalty(curr, old1);
-            let penalty = penalty * count;
-            if detailed && penalty > 0. {
-                *result[4].high_keys.entry(slice2).or_insert(0.0) += penalty;
-                result[4].total += penalty;
-            }
-            total += penalty;
-        }
-
-        // 5: Pinky/ring twist.
-        if (curr.finger == Finger::Ring && old1.finger == Finger::Pinky) ||
-           (curr.finger == Finger::Pinky && old1.finger == Finger::Ring) {
-            let penalty = calculate_pinky_ring_twist(curr, old1);
-            let penalty = penalty * count;
-            if detailed && penalty > 0. {
-                *result[5].high_keys.entry(slice2).or_insert(0.0) += penalty;
-                result[5].total += penalty;
-            }
-            total += penalty;
-        }
-
-        // 8: Roll out.
+        // 6: Roll out.
         if is_roll_out(curr.finger, old1.finger) {
             let penalty = 0.125 * count;
             if detailed {
-                *result[8].high_keys.entry(slice2).or_insert(0.0) += penalty;
-                result[8].total += penalty;
+                *result[6].high_keys.entry(slice2).or_insert(0.0) += penalty;
+                result[6].total += penalty;
             }
             total += penalty;
         }
 
-        // 9: Roll in.
+        // 7: Roll in.
         if is_roll_in(curr.finger, old1.finger) {
             let penalty = -0.125 * count;
             if detailed {
-                *result[9].high_keys.entry(slice2).or_insert(0.0) += penalty;
-                result[9].total += penalty;
+                *result[7].high_keys.entry(slice2).or_insert(0.0) += penalty;
+                result[7].total += penalty;
             }
             total += penalty;
         }
@@ -342,7 +306,7 @@ fn penalize<'a, 'b>(
     if curr.hand == old1.hand && old1.hand == old2.hand {
         let slice3 = &string[(len - 3)..len];
 
-        // 7: Roll reversal.
+        // 5: Roll reversal.
         if (curr.finger == Finger::Middle &&
             old1.finger == Finger::Pinky &&
             old2.finger == Finger::Ring) ||
@@ -351,26 +315,26 @@ fn penalize<'a, 'b>(
             old2.finger == Finger::Middle) {
             let penalty = 20.0 * count;
             if detailed {
-                *result[7].high_keys.entry(slice3).or_insert(0.0) += penalty;
-                result[7].total += penalty;
+                *result[5].high_keys.entry(slice3).or_insert(0.0) += penalty;
+                result[5].total += penalty;
             }
             total += penalty;
         }
 
-        // 11: Twist.
+        // 9: Twist.
         if ((curr.row == Row::Top && old1.row == Row::Home && old2.row == Row::Bottom) ||
             (curr.row == Row::Bottom && old1.row == Row::Home && old2.row == Row::Top)) &&
            ((is_roll_out(curr.finger, old1.finger) && is_roll_out(old1.finger, old2.finger)) ||
                (is_roll_in(curr.finger, old1.finger) && is_roll_in(old1.finger, old2.finger))) {
             let penalty = 10.0 * count;
             if detailed {
-                *result[11].high_keys.entry(slice3).or_insert(0.0) += penalty;
-                result[11].total += penalty;
+                *result[9].high_keys.entry(slice3).or_insert(0.0) += penalty;
+                result[9].total += penalty;
             }
             total += penalty;
         }
 
-        // 12: Pinky/ring alternation.
+        // 10: Pinky/ring alternation.
         if (curr.finger == Finger::Ring &&
             old1.finger == Finger::Pinky &&
             old2.finger == Finger::Ring) ||
@@ -379,22 +343,22 @@ fn penalize<'a, 'b>(
             old2.finger == Finger::Pinky) {
             let penalty = 15.0 * count;
             if detailed {
-                *result[12].high_keys.entry(slice3).or_insert(0.0) += penalty;
-                result[12].total += penalty;
+                *result[10].high_keys.entry(slice3).or_insert(0.0) += penalty;
+                result[10].total += penalty;
             }
             total += penalty;
         }
     }
 
-    // 10: Long jump sandwich.
+    // 8: Long jump sandwich.
     if curr.hand == old2.hand && curr.finger == old2.finger {
         if curr.row == Row::Top && old2.row == Row::Bottom ||
            curr.row == Row::Bottom && old2.row == Row::Top {
             let slice3 = &string[(len - 3)..len];
             let penalty = 3.0 * count;
             if detailed {
-                *result[10].high_keys.entry(slice3).or_insert(0.0) += penalty;
-                result[10].total += penalty;
+                *result[8].high_keys.entry(slice3).or_insert(0.0) += penalty;
+                result[8].total += penalty;
             }
             total += penalty;
         }
@@ -407,12 +371,12 @@ fn penalize<'a, 'b>(
     };
 
     if curr.hand == old1.hand && old1.hand == old2.hand && old2.hand == old3.hand {
-        // 6: Same hand.
+        // 4: Same hand.
         let slice4 = &string[(len - 4)..len];
         let penalty = 0.1 * count;
         if detailed {
-            *result[6].high_keys.entry(slice4).or_insert(0.0) += penalty;
-            result[6].total += penalty;
+            *result[4].high_keys.entry(slice4).or_insert(0.0) += penalty;
+            result[4].total += penalty;
         }
         total += penalty;
     } else if curr.hand != old1.hand && old1.hand != old2.hand && old2.hand != old3.hand {
@@ -562,177 +526,101 @@ fn calculate_same_finger_penalty(curr: &KeyPress, old1: &KeyPress)
         + if old1.outer { 10. } else { 0. }   // 10 points to Slytherin.
 }
 
-fn calculate_long_jump_consecutive_penalty(curr: &KeyPress, old1: &KeyPress)
+fn calculate_stretch_penalty(curr: &KeyPress, old1: &KeyPress)
 -> f64 {
-    // This penalty should only be calculated if we jump from the bottom to
-    // top row (or vice versa) on the same hand.
+    // This penalty should only be calculated if we use different fingers on
+    // the same hand.
     assert!(curr.hand == old1.hand);
-    assert!(curr.row == Row::Top && old1.row == Row::Bottom ||
-            curr.row == Row::Bottom && old1.row == Row::Top);
+    assert!(curr.finger != old1.finger);
 
     // In the following comments, all letter combinations are on Qwerty.
 
-    // Ring <--> Pinky keypresses
-    if curr.finger == Finger::Ring  && old1.finger == Finger::Pinky ||
-       curr.finger == Finger::Pinky && old1.finger == Finger::Ring {
+    // 1 point penalties.
 
-        // wz zw o/ /o
-        if curr.pos == 1 && old1.pos == 22 ||
-           curr.pos == 22 && old1.pos == 1 ||
-           curr.pos == 8 && old1.pos == 31 ||
-           curr.pos == 31 && old1.pos == 8 {
-            return 5.;
-        }
-
-        // xq qx .p p.
-        if curr.pos == 23 && old1.pos == 0 ||
-           curr.pos == 0 && old1.pos == 23 ||
-           curr.pos == 30 && old1.pos == 9 ||
-           curr.pos == 9 && old1.pos == 30 {
-            return 5.;
-        }
-
-        // .\ \.
-        if curr.pos == 30 && old1.pos == 10 ||
-           curr.pos == 10 && old1.pos == 30 {
-            return 0.;
-        }
-
-        assert!(false, "All Ring/Pinky pairs must be covered by now");
+    // ez ze i/ /i
+    if curr.pos == 2 && old1.pos == 22 ||
+       curr.pos == 22 && old1.pos == 2 ||
+       curr.pos == 7 && old1.pos == 31 ||
+       curr.pos == 31 && old1.pos == 7 {
+        return 1.;
     }
 
-    // Middle <--> Ring keypresses
-    if curr.finger == Finger::Middle  && old1.finger == Finger::Ring ||
-       curr.finger == Finger::Ring && old1.finger == Finger::Middle {
-
-        // ex xe i. .i
-        if curr.pos == 2 && old1.pos == 23 ||
-           curr.pos == 23 && old1.pos == 2 ||
-           curr.pos == 7 && old1.pos == 30 ||
-           curr.pos == 30 && old1.pos == 7 {
-            return 2.;
-        }
-
-        // cw wc ,o o,
-        if curr.pos == 24 && old1.pos == 1 ||
-           curr.pos == 1 && old1.pos == 24 ||
-           curr.pos == 29 && old1.pos == 8 ||
-           curr.pos == 8 && old1.pos == 29 {
-            return 3.;
-        }
-
-        assert!(false, "All Middle/Ring pairs must be covered by now");
+    // bs sb nl ln
+    if curr.pos == 26 && old1.pos == 12 ||
+       curr.pos == 12 && old1.pos == 26 ||
+       curr.pos == 27 && old1.pos == 19 ||
+       curr.pos == 19 && old1.pos == 27 {
+        return 1.;
     }
 
-    // Index <--> Ring keypresses
-    if curr.finger == Finger::Index  && old1.finger == Finger::Ring ||
-       curr.finger == Finger::Ring && old1.finger == Finger::Index {
-        // vw wv mo om
-        if curr.pos == 25 && old1.pos == 1 ||
-           curr.pos == 1 && old1.pos == 25 ||
-           curr.pos == 28 && old1.pos == 8 ||
-           curr.pos == 8 && old1.pos == 28 {
-            return 0.;
-        }
-
-        // bw wb no on
-        if curr.pos == 26 && old1.pos == 1 ||
-           curr.pos == 1 && old1.pos == 26 ||
-           curr.pos == 27 && old1.pos == 8 ||
-           curr.pos == 8 && old1.pos == 27 {
-            return 0.;
-        }
-
-        // rx xr u. .u
-        if curr.pos == 3 && old1.pos == 23 ||
-           curr.pos == 23 && old1.pos == 3 ||
-           curr.pos == 6 && old1.pos == 30 ||
-           curr.pos == 30 && old1.pos == 6 {
-            return 1.;
-        }
-
-        // tx xt y. .y
-        if curr.pos == 4 && old1.pos == 23 ||
-           curr.pos == 23 && old1.pos == 4 ||
-           curr.pos == 5 && old1.pos == 30 ||
-           curr.pos == 30 && old1.pos == 5 {
-            return 8.;
-        }
-
-        assert!(false, "All Index/Ring pairs must be covered by now");
+    // gw wg ho oh
+    if curr.pos == 1 && old1.pos == 15 ||
+       curr.pos == 15 && old1.pos == 1 ||
+       curr.pos == 16 && old1.pos == 8 ||
+       curr.pos == 8 && old1.pos == 16 {
+        return 1.;
     }
 
-    // Index <--> Middle keypresses
-    if curr.finger == Finger::Index  && old1.finger == Finger::Middle ||
-       curr.finger == Finger::Middle && old1.finger == Finger::Index {
-        // ve ev mi im
-        if curr.pos == 25 && old1.pos == 2 ||
-           curr.pos == 2 && old1.pos == 25 ||
-           curr.pos == 28 && old1.pos == 7 ||
-           curr.pos == 7 && old1.pos == 28 {
-            return 0.;
-        }
-
-        // rc cr u, ,u
-        if curr.pos == 3 && old1.pos == 24 ||
-           curr.pos == 24 && old1.pos == 3 ||
-           curr.pos == 6 && old1.pos == 29 ||
-           curr.pos == 29 && old1.pos == 6 {
-            return 4.;
-        }
-
-        // be eb ni in
-        if curr.pos == 26 && old1.pos == 2 ||
-           curr.pos == 2 && old1.pos == 26 ||
-           curr.pos == 27 && old1.pos == 7 ||
-           curr.pos == 7 && old1.pos == 27 {
-            return 7.;
-        }
-
-        // tc ct y, ,y
-        if curr.pos == 4 && old1.pos == 24 ||
-           curr.pos == 24 && old1.pos == 4 ||
-           curr.pos == 5 && old1.pos == 29 ||
-           curr.pos == 29 && old1.pos == 5 {
-            return 10.;
-        }
-
-        assert!(false, "All Index/Middle pairs must be covered by now");
+    // ba ab n; ;n
+    if curr.pos == 11 && old1.pos == 26 ||
+       curr.pos == 26 && old1.pos == 11 ||
+       curr.pos == 27 && old1.pos == 20 ||
+       curr.pos == 20 && old1.pos == 27 {
+        return 1.;
     }
 
-    0.
-}
+    // gq qg hp ph
+    if curr.pos == 0 && old1.pos == 15 ||
+       curr.pos == 15 && old1.pos == 0 ||
+       curr.pos == 16 && old1.pos == 9 ||
+       curr.pos == 9 && old1.pos == 16 {
+        return 1.;
+    }
 
-fn calculate_pinky_ring_twist(curr: &KeyPress, old1: &KeyPress)
--> f64 {
-    // This penalty should only be calculated if we alternate between pinky and
-    // ring fingers on the same hand.
-    assert!(curr.hand == old1.hand);
-    assert!(
-        (curr.finger == Finger::Ring && old1.finger == Finger::Pinky) ||
-        (curr.finger == Finger::Pinky && old1.finger == Finger::Ring)
-    );
+    // rx xr u. .u
+    if curr.pos == 3 && old1.pos == 23 ||
+       curr.pos == 23 && old1.pos == 3 ||
+       curr.pos == 6 && old1.pos == 30 ||
+       curr.pos == 30 && old1.pos == 6 {
+        return 1.;
+    }
 
-    // In the following comments, all letter combinations are on Qwerty.
+    // rz zr u/ /u
+    if curr.pos == 3 && old1.pos == 22 ||
+       curr.pos == 22 && old1.pos == 3 ||
+       curr.pos == 6 && old1.pos == 31 ||
+       curr.pos == 31 && old1.pos == 6 {
+        return 1.;
+    }
+
+    // 2 point penalties.
+
+    // k\ \k
+    if curr.pos == 18 && old1.pos == 10 ||
+       curr.pos == 10 && old1.pos == 18 {
+        return 2.;
+    }
+
+    // ,' ',
+    if curr.pos == 29 && old1.pos == 21 ||
+       curr.pos == 21 && old1.pos == 29 {
+        return 2.;
+    }
+
+    // rc cr u, ,u
+    if curr.pos == 3 && old1.pos == 24 ||
+       curr.pos == 24 && old1.pos == 3 ||
+       curr.pos == 6 && old1.pos == 29 ||
+       curr.pos == 29 && old1.pos == 6 {
+        return 2.;
+    }
 
     // xa ax .; ;.
     if curr.pos == 23 && old1.pos == 11 ||
        curr.pos == 11 && old1.pos == 23 ||
        curr.pos == 30 && old1.pos == 20 ||
        curr.pos == 20 && old1.pos == 30 {
-        return 0.;
-    }
-
-    // .' '.
-    if curr.pos == 30 && old1.pos == 21 ||
-       curr.pos == 21 && old1.pos == 30 {
         return 2.;
-    }
-
-    // l\ \l
-    if curr.pos == 19 && old1.pos == 10 ||
-       curr.pos == 10 && old1.pos == 19 {
-        return 3.;
     }
 
     // sq qs lp pl
@@ -740,21 +628,281 @@ fn calculate_pinky_ring_twist(curr: &KeyPress, old1: &KeyPress)
        curr.pos == 0 && old1.pos == 12 ||
        curr.pos == 19 && old1.pos == 9 ||
        curr.pos == 9 && old1.pos == 19 {
+        return 2.;
+    }
+
+    // bw wb no on
+    if curr.pos == 26 && old1.pos == 1 ||
+       curr.pos == 1 && old1.pos == 26 ||
+       curr.pos == 27 && old1.pos == 8 ||
+       curr.pos == 8 && old1.pos == 27 {
+        return 2.;
+    }
+
+    // 3 point penalties.
+
+    // bx xb n. .n
+    if curr.pos == 26 && old1.pos == 23 ||
+       curr.pos == 23 && old1.pos == 26 ||
+       curr.pos == 27 && old1.pos == 30 ||
+       curr.pos == 30 && old1.pos == 27 {
+        return 3.;
+    }
+
+    // gs sg hl lh
+    if curr.pos == 15 && old1.pos == 12 ||
+       curr.pos == 12 && old1.pos == 15 ||
+       curr.pos == 16 && old1.pos == 19 ||
+       curr.pos == 19 && old1.pos == 16 {
+        return 3.;
+    }
+
+    // tw wt yo oy
+    if curr.pos == 4 && old1.pos == 1 ||
+       curr.pos == 1 && old1.pos == 4 ||
+       curr.pos == 5 && old1.pos == 8 ||
+       curr.pos == 8 && old1.pos == 5 {
+        return 3.;
+    }
+
+    // m\ \m
+    if curr.pos == 28 && old1.pos == 10 ||
+       curr.pos == 10 && old1.pos == 28 {
+        return 3.;
+    }
+
+    // vq qv np pn
+    if curr.pos == 25 && old1.pos == 0 ||
+       curr.pos == 0 && old1.pos == 25 ||
+       curr.pos == 27 && old1.pos == 9 ||
+       curr.pos == 9 && old1.pos == 27 {
+        return 3.;
+    }
+
+    // ex xe i. .i
+    if curr.pos == 2 && old1.pos == 23 ||
+       curr.pos == 23 && old1.pos == 2 ||
+       curr.pos == 7 && old1.pos == 30 ||
+       curr.pos == 30 && old1.pos == 7 {
+        return 3.;
+    }
+
+    // 4 point penalties.
+
+    // bd db nk kn
+    if curr.pos == 26 && old1.pos == 13 ||
+       curr.pos == 13 && old1.pos == 26 ||
+       curr.pos == 27 && old1.pos == 18 ||
+       curr.pos == 18 && old1.pos == 27 {
+        return 4.;
+    }
+
+    // ge eg hi ih
+    if curr.pos == 15 && old1.pos == 2 ||
+       curr.pos == 2 && old1.pos == 15 ||
+       curr.pos == 16 && old1.pos == 7 ||
+       curr.pos == 7 && old1.pos == 16 {
+        return 4.;
+    }
+
+    // .' '.
+    if curr.pos == 30 && old1.pos == 21 ||
+       curr.pos == 21 && old1.pos == 30 {
+        return 4.;
+    }
+
+    // l\ \l
+    if curr.pos == 19 && old1.pos == 10 ||
+       curr.pos == 10 && old1.pos == 19 {
+        return 4.;
+    }
+
+    // cw wc ,o o,
+    if curr.pos == 24 && old1.pos == 1 ||
+       curr.pos == 1 && old1.pos == 24 ||
+       curr.pos == 29 && old1.pos == 8 ||
+       curr.pos == 8 && old1.pos == 29 {
+        return 4.;
+    }
+
+    // 5 point penalties.
+
+    // bc cb n, ,n
+    if curr.pos == 26 && old1.pos == 24 ||
+       curr.pos == 24 && old1.pos == 26 ||
+       curr.pos == 27 && old1.pos == 29 ||
+       curr.pos == 29 && old1.pos == 27 {
+        return 5.;
+    }
+
+    // gd dg hk kh
+    if curr.pos == 15 && old1.pos == 13 ||
+       curr.pos == 13 && old1.pos == 15 ||
+       curr.pos == 16 && old1.pos == 18 ||
+       curr.pos == 18 && old1.pos == 16 {
+        return 5.;
+    }
+
+    // te et yi iy
+    if curr.pos == 4 && old1.pos == 2 ||
+       curr.pos == 2 && old1.pos == 4 ||
+       curr.pos == 5 && old1.pos == 7 ||
+       curr.pos == 7 && old1.pos == 5 {
+        return 5.;
+    }
+
+    // 6 point penalties.
+
+    // n' 'n
+    if curr.pos == 27 && old1.pos == 21 ||
+       curr.pos == 21 && old1.pos == 27 {
+        return 6.;
+    }
+
+    // h\ \h
+    if curr.pos == 16 && old1.pos == 10 ||
+       curr.pos == 10 && old1.pos == 16 {
+        return 6.;
+    }
+
+    // y\ \y
+    if curr.pos == 5 && old1.pos == 10 ||
+       curr.pos == 10 && old1.pos == 5 {
+        return 6.;
+    }
+
+    // h' 'h
+    if curr.pos == 16 && old1.pos == 21 ||
+       curr.pos == 21 && old1.pos == 16 {
+        return 6.;
+    }
+
+    // y' 'y
+    if curr.pos == 5 && old1.pos == 21 ||
+       curr.pos == 21 && old1.pos == 5 {
+        return 6.;
+    }
+
+    // 7 point penalties.
+
+    // gx xg h. .h
+    if curr.pos == 15 && old1.pos == 23 ||
+       curr.pos == 23 && old1.pos == 15 ||
+       curr.pos == 16 && old1.pos == 30 ||
+       curr.pos == 30 && old1.pos == 16 {
+        return 7.;
+    }
+
+    // ts st yl ly
+    if curr.pos == 4 && old1.pos == 12 ||
+       curr.pos == 12 && old1.pos == 4 ||
+       curr.pos == 5 && old1.pos == 19 ||
+       curr.pos == 19 && old1.pos == 5 {
+        return 7.;
+    }
+
+    // td dt yk ky
+    if curr.pos == 4 && old1.pos == 13 ||
+       curr.pos == 13 && old1.pos == 4 ||
+       curr.pos == 5 && old1.pos == 18 ||
+       curr.pos == 18 && old1.pos == 5 {
+        return 7.;
+    }
+
+    // gc cg h, ,h
+    if curr.pos == 15 && old1.pos == 24 ||
+       curr.pos == 24 && old1.pos == 15 ||
+       curr.pos == 16 && old1.pos == 29 ||
+       curr.pos == 29 && old1.pos == 16 {
+        return 7.;
+    }
+
+    // 8 point penalties.
+
+    // tc ct y, ,y
+    if curr.pos == 4 && old1.pos == 24 ||
+       curr.pos == 24 && old1.pos == 4 ||
+       curr.pos == 5 && old1.pos == 29 ||
+       curr.pos == 29 && old1.pos == 5 {
+        return 8.;
+    }
+
+    // 9 point penalties.
+
+    // tx xt y. .y
+    if curr.pos == 4 && old1.pos == 23 ||
+       curr.pos == 23 && old1.pos == 4 ||
+       curr.pos == 5 && old1.pos == 30 ||
+       curr.pos == 30 && old1.pos == 5 {
+        return 9.
+    }
+
+    // 10 point penalties.
+
+    // tz zt y/ /y
+    if curr.pos == 4 && old1.pos == 22 ||
+       curr.pos == 22 && old1.pos == 4 ||
+       curr.pos == 5 && old1.pos == 31 ||
+       curr.pos == 31 && old1.pos == 5 {
         return 10.;
     }
+
+    // be eb ni in
+    if curr.pos == 26 && old1.pos == 2 ||
+       curr.pos == 2 && old1.pos == 26 ||
+       curr.pos == 27 && old1.pos == 7 ||
+       curr.pos == 7 && old1.pos == 27 {
+        return 10.;
+    }
+
+    // 11 point penalties.
+
+    // n\ \n
+    if curr.pos == 27 && old1.pos == 10 ||
+       curr.pos == 10 && old1.pos == 27 {
+        return 11.;
+    }
+
+    // 12 point penalties.
 
     // xq qx .p p.
     if curr.pos == 23 && old1.pos == 0 ||
        curr.pos == 0 && old1.pos == 23 ||
        curr.pos == 30 && old1.pos == 9 ||
        curr.pos == 9 && old1.pos == 30 {
-        return 10.;
+        return 12.;
     }
+
+    // cq qc ,p p,
+    if curr.pos == 24 && old1.pos == 0 ||
+       curr.pos == 0 && old1.pos == 24 ||
+       curr.pos == 29 && old1.pos == 9 ||
+       curr.pos == 9 && old1.pos == 29 {
+        return 12.;
+    }
+
+    // 14 point penalties.
 
     // .\ \.
     if curr.pos == 30 && old1.pos == 10 ||
        curr.pos == 10 && old1.pos == 30 {
-        return 10.;
+        return 14.;
+    }
+
+    // ,\ \,
+    if curr.pos == 29 && old1.pos == 10 ||
+       curr.pos == 10 && old1.pos == 29 {
+        return 14.;
+    }
+
+    // 15 point penalties.
+
+    // wz zw o/ /o
+    if curr.pos == 1 && old1.pos == 22 ||
+       curr.pos == 22 && old1.pos == 1 ||
+       curr.pos == 8 && old1.pos == 31 ||
+       curr.pos == 31 && old1.pos == 8 {
+        return 15.;
     }
 
     0.
