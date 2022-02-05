@@ -64,11 +64,12 @@ pub fn init<'a>()
     });
 
     // 2. Penalize 5 points for using the same finger twice on different keys.
-    // An extra 10 points if the jump is between top and bottom rows. Note: the
-    // penalty for consecutive index finger usage is significantly more nuanced
-    // because some patterns (e.g. G->R on Qwerty) can be typed easily by
-    // moving the middle finger over to the index finger's place. See the
-    // weights.xlsx file ("New--Same Finger" sheet) for details.
+    // An extra 10 points if the jump is between top and bottom rows. An extra
+    // 5 points for each outer key. Note: the penalty for consecutive index
+    // finger usage is significantly more nuanced because some patterns (e.g.
+    // G->R on Qwerty) can be typed easily by moving the middle finger over to
+    // the index finger's place. See the weights.xlsx file ("New--Same Finger"
+    // sheet) for details.
     penalties.push(KeyPenalty {
         name: "same finger",
     });
@@ -404,18 +405,32 @@ fn calculate_same_finger_penalty(curr: &KeyPress, old1: &KeyPress)
     if curr.finger == Finger::Index {
         // In the following comments, all letter combinations are on Qwerty.
 
-        // gr/rg/hu/uh
-        if curr.pos == 15 && old1.pos == 3 ||
-           curr.pos == 3 && old1.pos == 15 ||
-           curr.pos == 16 && old1.pos == 6 ||
-           curr.pos == 6 && old1.pos == 16 {
-            return 2.;
-        }
         // fg/gf/hj/jh
         if curr.pos == 14 && old1.pos == 15 ||
            curr.pos == 15 && old1.pos == 14 ||
            curr.pos == 16 && old1.pos == 17 ||
            curr.pos == 17 && old1.pos == 16 {
+            return 0.;
+        }
+        // gr/rg/hu/uh
+        if curr.pos == 15 && old1.pos == 3 ||
+           curr.pos == 3 && old1.pos == 15 ||
+           curr.pos == 16 && old1.pos == 6 ||
+           curr.pos == 6 && old1.pos == 16 {
+            return 0.;
+        }
+        // bf/fb/nj/jn
+        if curr.pos == 26 && old1.pos == 14 ||
+           curr.pos == 14 && old1.pos == 26 ||
+           curr.pos == 27 && old1.pos == 17 ||
+           curr.pos == 17 && old1.pos == 27 {
+            return 1.;
+        }
+        // rt/tr/yu/uy
+        if curr.pos == 3 && old1.pos == 4 ||
+           curr.pos == 4 && old1.pos == 3 ||
+           curr.pos == 5 && old1.pos == 6 ||
+           curr.pos == 6 && old1.pos == 5 {
             return 3.;
         }
         // fr/rf/ju/uj
@@ -432,82 +447,68 @@ fn calculate_same_finger_penalty(curr: &KeyPress, old1: &KeyPress)
            curr.pos == 17 && old1.pos == 28 {
             return 5.;
         }
-        // bf/fb/nj/jn
-        if curr.pos == 26 && old1.pos == 14 ||
-           curr.pos == 14 && old1.pos == 26 ||
-           curr.pos == 27 && old1.pos == 17 ||
-           curr.pos == 17 && old1.pos == 27 {
-            return 7.;
-        }
-        // rt/tr/yu/uy
-        if curr.pos == 3 && old1.pos == 4 ||
-           curr.pos == 4 && old1.pos == 3 ||
-           curr.pos == 5 && old1.pos == 6 ||
-           curr.pos == 6 && old1.pos == 5 {
-            return 8.;
+        // br/rb/nu/un
+        if curr.pos == 26 && old1.pos == 3 ||
+           curr.pos == 3 && old1.pos == 26 ||
+           curr.pos == 27 && old1.pos == 6 ||
+           curr.pos == 6 && old1.pos == 27 {
+            return 6.;
         }
         // bv/vb/nm/mn
         if curr.pos == 26 && old1.pos == 25 ||
            curr.pos == 25 && old1.pos == 26 ||
            curr.pos == 27 && old1.pos == 28 ||
            curr.pos == 28 && old1.pos == 27 {
-            return 11.;
-        }
-        // ft/tf/jy/yj
-        if curr.pos == 14 && old1.pos == 4 ||
-           curr.pos == 4 && old1.pos == 14 ||
-           curr.pos == 17 && old1.pos == 5 ||
-           curr.pos == 5 && old1.pos == 17 {
-            return 13.;
-        }
-        // br/rb/nu/un
-        if curr.pos == 26 && old1.pos == 3 ||
-           curr.pos == 3 && old1.pos == 26 ||
-           curr.pos == 27 && old1.pos == 6 ||
-           curr.pos == 6 && old1.pos == 27 {
-            return 14.;
+            return 7.;
         }
         // vr/rv/mu/um
         if curr.pos == 25 && old1.pos == 3 ||
            curr.pos == 3 && old1.pos == 25 ||
            curr.pos == 28 && old1.pos == 6 ||
            curr.pos == 6 && old1.pos == 28 {
-            return 15.;
+            return 8.;
+        }
+        // ft/tf/jy/yj
+        if curr.pos == 14 && old1.pos == 4 ||
+           curr.pos == 4 && old1.pos == 14 ||
+           curr.pos == 17 && old1.pos == 5 ||
+           curr.pos == 5 && old1.pos == 17 {
+            return 10.;
         }
         // vg/gv/mh/hm
         if curr.pos == 25 && old1.pos == 15 ||
            curr.pos == 15 && old1.pos == 25 ||
            curr.pos == 28 && old1.pos == 16 ||
            curr.pos == 16 && old1.pos == 28 {
-            return 17.;
+            return 10.;
         }
         // bg/gb/nh/hn
         if curr.pos == 26 && old1.pos == 15 ||
            curr.pos == 15 && old1.pos == 26 ||
            curr.pos == 27 && old1.pos == 16 ||
            curr.pos == 16 && old1.pos == 27 {
-            return 18.;
+            return 15.;
         }
         // gt/tg/hy/yh
         if curr.pos == 15 && old1.pos == 4 ||
            curr.pos == 4 && old1.pos == 15 ||
            curr.pos == 16 && old1.pos == 5 ||
            curr.pos == 5 && old1.pos == 16 {
-            return 20.;
+            return 15.;
         }
         // bt/tb/ny/yn
         if curr.pos == 26 && old1.pos == 4 ||
            curr.pos == 4 && old1.pos == 26 ||
            curr.pos == 27 && old1.pos == 5 ||
            curr.pos == 5 && old1.pos == 27 {
-            return 25.;
+            return 20.;
         }
         // vt/tv/my/ym
         if curr.pos == 25 && old1.pos == 4 ||
            curr.pos == 4 && old1.pos == 25 ||
            curr.pos == 28 && old1.pos == 5 ||
            curr.pos == 5 && old1.pos == 28 {
-            return 28.;
+            return 25.;
         }
 
         assert!(false, "All index finger pairs must be covered by now");
@@ -521,6 +522,8 @@ fn calculate_same_finger_penalty(curr: &KeyPress, old1: &KeyPress)
 
     // Long jumping is painful: 15 points; else 5 points.
     0.0 + if long_jump { 15.0 } else { 5.0 }
+        + if curr.outer { 5.0 } else { 0.0 }
+        + if old1.outer { 5.0 } else { 0.0 }
 }
 
 fn calculate_stretch_penalty(curr: &KeyPress, old1: &KeyPress)
@@ -534,20 +537,156 @@ fn calculate_stretch_penalty(curr: &KeyPress, old1: &KeyPress)
 
     // 1 point penalties.
 
-    // vq qv mp pm
-    if curr.pos == 25 && old1.pos == 0 ||
-       curr.pos == 0 && old1.pos == 25 ||
-       curr.pos == 28 && old1.pos == 9 ||
-       curr.pos == 9 && old1.pos == 28 {
+    // ve ev mi im
+    if curr.pos == 25 && old1.pos == 2 ||
+       curr.pos == 2 && old1.pos == 25 ||
+       curr.pos == 28 && old1.pos == 7 ||
+       curr.pos == 7 && old1.pos == 28 {
         return 1.;
     }
 
-    // rx xr u. .u
-    if curr.pos == 3 && old1.pos == 23 ||
-       curr.pos == 23 && old1.pos == 3 ||
-       curr.pos == 6 && old1.pos == 30 ||
-       curr.pos == 30 && old1.pos == 6 {
+    // vw wv mo om
+    if curr.pos == 25 && old1.pos == 1 ||
+       curr.pos == 1 && old1.pos == 25 ||
+       curr.pos == 28 && old1.pos == 8 ||
+       curr.pos == 8 && old1.pos == 28 {
         return 1.;
+    }
+
+    // ba ab n; ;n
+    if curr.pos == 26 && old1.pos == 11 ||
+       curr.pos == 11 && old1.pos == 26 ||
+       curr.pos == 27 && old1.pos == 20 ||
+       curr.pos == 20 && old1.pos == 27 {
+        return 1.;
+    }
+
+    // gq qg hp ph
+    if curr.pos == 15 && old1.pos == 0 ||
+       curr.pos == 0 && old1.pos == 15 ||
+       curr.pos == 16 && old1.pos == 9 ||
+       curr.pos == 9 && old1.pos == 16 {
+        return 1.;
+    }
+
+    // bz zb n/ /n
+    if curr.pos == 26 && old1.pos == 22 ||
+       curr.pos == 22 && old1.pos == 26 ||
+       curr.pos == 27 && old1.pos == 31 ||
+       curr.pos == 31 && old1.pos == 27 {
+        return 1.;
+    }
+
+    // ga ag h; ;h
+    if curr.pos == 15 && old1.pos == 11 ||
+       curr.pos == 11 && old1.pos == 15 ||
+       curr.pos == 16 && old1.pos == 20 ||
+       curr.pos == 20 && old1.pos == 16 {
+        return 1.;
+    }
+
+    // tq qt yp py
+    if curr.pos == 4 && old1.pos == 0 ||
+       curr.pos == 0 && old1.pos == 4 ||
+       curr.pos == 5 && old1.pos == 9 ||
+       curr.pos == 9 && old1.pos == 5 {
+        return 1.;
+    }
+
+    // i' 'i
+    if curr.pos == 7 && old1.pos == 21 ||
+       curr.pos == 21 && old1.pos == 7 {
+        return 1.;
+    }
+
+    // u' 'u
+    if curr.pos == 6 && old1.pos == 21 ||
+       curr.pos == 21 && old1.pos == 6 {
+        return 1.;
+    }
+
+    // ta at y; ;y
+    if curr.pos == 4 && old1.pos == 11 ||
+       curr.pos == 11 && old1.pos == 4 ||
+       curr.pos == 5 && old1.pos == 20 ||
+       curr.pos == 20 && old1.pos == 5 {
+        return 1.;
+    }
+
+    // gz zg h/ /h
+    if curr.pos == 15 && old1.pos == 22 ||
+       curr.pos == 22 && old1.pos == 15 ||
+       curr.pos == 16 && old1.pos == 31 ||
+       curr.pos == 31 && old1.pos == 16 {
+        return 1.;
+    }
+
+    // bs sb nl ln
+    if curr.pos == 26 && old1.pos == 12 ||
+       curr.pos == 12 && old1.pos == 26 ||
+       curr.pos == 27 && old1.pos == 19 ||
+       curr.pos == 19 && old1.pos == 27 {
+        return 1.;
+    }
+
+    // gw wg ho oh
+    if curr.pos == 15 && old1.pos == 1 ||
+       curr.pos == 1 && old1.pos == 15 ||
+       curr.pos == 16 && old1.pos == 8 ||
+       curr.pos == 8 && old1.pos == 16 {
+        return 1.;
+    }
+
+    // bx xb n. .n
+    if curr.pos == 26 && old1.pos == 23 ||
+       curr.pos == 23 && old1.pos == 26 ||
+       curr.pos == 27 && old1.pos == 30 ||
+       curr.pos == 30 && old1.pos == 27 {
+        return 1.;
+    }
+
+    // gs sg hl lh
+    if curr.pos == 15 && old1.pos == 12 ||
+       curr.pos == 12 && old1.pos == 15 ||
+       curr.pos == 16 && old1.pos == 19 ||
+       curr.pos == 19 && old1.pos == 16 {
+        return 1.;
+    }
+
+    // tw wt yo oy
+    if curr.pos == 4 && old1.pos == 1 ||
+       curr.pos == 1 && old1.pos == 4 ||
+       curr.pos == 5 && old1.pos == 8 ||
+       curr.pos == 8 && old1.pos == 5 {
+        return 1.;
+    }
+
+    // j\ \j
+    if curr.pos == 17 && old1.pos == 10 ||
+       curr.pos == 10 && old1.pos == 17 {
+        return 1.;
+    }
+
+    // m' 'm
+    if curr.pos == 28 && old1.pos == 21 ||
+       curr.pos == 21 && old1.pos == 28 {
+        return 1.;
+    }
+
+    // o' 'o
+    if curr.pos == 8 && old1.pos == 21 ||
+       curr.pos == 21 && old1.pos == 8 {
+        return 1.;
+    }
+
+    // 2 point penalties.
+
+    // ez ze i/ /i
+    if curr.pos == 2 && old1.pos == 22 ||
+       curr.pos == 22 && old1.pos == 2 ||
+       curr.pos == 7 && old1.pos == 31 ||
+       curr.pos == 31 && old1.pos == 7 {
+        return 2.;
     }
 
     // rz zr u/ /u
@@ -555,36 +694,46 @@ fn calculate_stretch_penalty(curr: &KeyPress, old1: &KeyPress)
        curr.pos == 22 && old1.pos == 3 ||
        curr.pos == 6 && old1.pos == 31 ||
        curr.pos == 31 && old1.pos == 6 {
-        return 1.;
-    }
-
-    // ex xe i. .i
-    if curr.pos == 2 && old1.pos == 23 ||
-       curr.pos == 23 && old1.pos == 2 ||
-       curr.pos == 7 && old1.pos == 30 ||
-       curr.pos == 30 && old1.pos == 7 {
-        return 1.;
-    }
-
-    // 2 point penalties.
-
-    // k\ \k
-    if curr.pos == 18 && old1.pos == 10 ||
-       curr.pos == 10 && old1.pos == 18 {
         return 2.;
     }
 
-    // ,' ',
-    if curr.pos == 29 && old1.pos == 21 ||
-       curr.pos == 21 && old1.pos == 29 {
+    // bd db nk kn
+    if curr.pos == 26 && old1.pos == 13 ||
+       curr.pos == 13 && old1.pos == 26 ||
+       curr.pos == 27 && old1.pos == 18 ||
+       curr.pos == 18 && old1.pos == 27 {
         return 2.;
     }
 
-    // rc cr u, ,u
-    if curr.pos == 3 && old1.pos == 24 ||
-       curr.pos == 24 && old1.pos == 3 ||
-       curr.pos == 6 && old1.pos == 29 ||
-       curr.pos == 29 && old1.pos == 6 {
+    // ge eg hi ih
+    if curr.pos == 15 && old1.pos == 2 ||
+       curr.pos == 2 && old1.pos == 15 ||
+       curr.pos == 16 && old1.pos == 7 ||
+       curr.pos == 7 && old1.pos == 16 {
+        return 2.;
+    }
+
+    // bc cb n, ,n
+    if curr.pos == 26 && old1.pos == 24 ||
+       curr.pos == 24 && old1.pos == 26 ||
+       curr.pos == 27 && old1.pos == 29 ||
+       curr.pos == 29 && old1.pos == 27 {
+        return 2.;
+    }
+
+    // gd dg hk kh
+    if curr.pos == 15 && old1.pos == 13 ||
+       curr.pos == 13 && old1.pos == 15 ||
+       curr.pos == 16 && old1.pos == 18 ||
+       curr.pos == 18 && old1.pos == 16 {
+        return 2.;
+    }
+
+    // te et yi iy
+    if curr.pos == 4 && old1.pos == 2 ||
+       curr.pos == 2 && old1.pos == 4 ||
+       curr.pos == 5 && old1.pos == 7 ||
+       curr.pos == 7 && old1.pos == 5 {
         return 2.;
     }
 
@@ -604,18 +753,52 @@ fn calculate_stretch_penalty(curr: &KeyPress, old1: &KeyPress)
         return 2.;
     }
 
+    // vq qv mp pm
+    if curr.pos == 25 && old1.pos == 0 ||
+       curr.pos == 0 && old1.pos == 25 ||
+       curr.pos == 28 && old1.pos == 9 ||
+       curr.pos == 9 && old1.pos == 28 {
+        return 2.;
+    }
+
+    // 3 point penalties.
+
     // bw wb no on
     if curr.pos == 26 && old1.pos == 1 ||
        curr.pos == 1 && old1.pos == 26 ||
        curr.pos == 27 && old1.pos == 8 ||
        curr.pos == 8 && old1.pos == 27 {
-        return 2.;
+        return 3.;
+    }
+
+    // gx xg h. .h
+    if curr.pos == 15 && old1.pos == 23 ||
+       curr.pos == 23 && old1.pos == 15 ||
+       curr.pos == 16 && old1.pos == 30 ||
+       curr.pos == 30 && old1.pos == 16 {
+        return 3.;
+    }
+
+    // ts st yl ly
+    if curr.pos == 4 && old1.pos == 12 ||
+       curr.pos == 12 && old1.pos == 4 ||
+       curr.pos == 5 && old1.pos == 19 ||
+       curr.pos == 19 && old1.pos == 5 {
+        return 3.;
+    }
+
+    // rx xr u. .u
+    if curr.pos == 3 && old1.pos == 23 ||
+       curr.pos == 23 && old1.pos == 3 ||
+       curr.pos == 6 && old1.pos == 30 ||
+       curr.pos == 30 && old1.pos == 6 {
+        return 3.;
     }
 
     // m\ \m
     if curr.pos == 28 && old1.pos == 10 ||
        curr.pos == 10 && old1.pos == 28 {
-        return 2.;
+        return 3.;
     }
 
     // bq qb np pn
@@ -623,18 +806,20 @@ fn calculate_stretch_penalty(curr: &KeyPress, old1: &KeyPress)
        curr.pos == 0 && old1.pos == 26 ||
        curr.pos == 27 && old1.pos == 9 ||
        curr.pos == 9 && old1.pos == 27 {
-        return 2.;
+        return 3.;
     }
 
-    // cw wc ,o o,
-    if curr.pos == 24 && old1.pos == 1 ||
-       curr.pos == 1 && old1.pos == 24 ||
-       curr.pos == 29 && old1.pos == 8 ||
-       curr.pos == 8 && old1.pos == 29 {
-        return 2.;
+    // k\ \k
+    if curr.pos == 18 && old1.pos == 10 ||
+       curr.pos == 10 && old1.pos == 18 {
+        return 3.;
     }
 
-    // 3 point penalties.
+    // ,' ',
+    if curr.pos == 29 && old1.pos == 21 ||
+       curr.pos == 21 && old1.pos == 29 {
+        return 3.;
+    }
 
     // .' '.
     if curr.pos == 30 && old1.pos == 21 ||
@@ -645,18 +830,6 @@ fn calculate_stretch_penalty(curr: &KeyPress, old1: &KeyPress)
     // l\ \l
     if curr.pos == 19 && old1.pos == 10 ||
        curr.pos == 10 && old1.pos == 19 {
-        return 3.;
-    }
-
-    // n' 'n
-    if curr.pos == 27 && old1.pos == 21 ||
-       curr.pos == 21 && old1.pos == 27 {
-        return 3.;
-    }
-
-    // h\ \h
-    if curr.pos == 16 && old1.pos == 10 ||
-       curr.pos == 10 && old1.pos == 16 {
         return 3.;
     }
 
@@ -672,18 +845,74 @@ fn calculate_stretch_penalty(curr: &KeyPress, old1: &KeyPress)
         return 3.;
     }
 
+    // 4 point penalties.
+
+    // tz zt y/ /y
+    if curr.pos == 4 && old1.pos == 22 ||
+       curr.pos == 22 && old1.pos == 4 ||
+       curr.pos == 5 && old1.pos == 31 ||
+       curr.pos == 31 && old1.pos == 5 {
+        return 4.;
+    }
+
+    // td dt yk ky
+    if curr.pos == 4 && old1.pos == 13 ||
+       curr.pos == 13 && old1.pos == 4 ||
+       curr.pos == 5 && old1.pos == 18 ||
+       curr.pos == 18 && old1.pos == 5 {
+        return 4.;
+    }
+
+    // gc cg h, ,h
+    if curr.pos == 15 && old1.pos == 24 ||
+       curr.pos == 24 && old1.pos == 15 ||
+       curr.pos == 16 && old1.pos == 29 ||
+       curr.pos == 29 && old1.pos == 16 {
+        return 4.;
+    }
+
+    // ex xe i. .i
+    if curr.pos == 2 && old1.pos == 23 ||
+       curr.pos == 23 && old1.pos == 2 ||
+       curr.pos == 7 && old1.pos == 30 ||
+       curr.pos == 30 && old1.pos == 7 {
+        return 4.;
+    }
+
+    // rc cr u, ,u
+    if curr.pos == 3 && old1.pos == 24 ||
+       curr.pos == 24 && old1.pos == 3 ||
+       curr.pos == 6 && old1.pos == 29 ||
+       curr.pos == 29 && old1.pos == 6 {
+        return 4.;
+    }
+
+    // cw wc ,o o,
+    if curr.pos == 24 && old1.pos == 1 ||
+       curr.pos == 1 && old1.pos == 24 ||
+       curr.pos == 29 && old1.pos == 8 ||
+       curr.pos == 8 && old1.pos == 29 {
+        return 4.;
+    }
+
+    // n' 'n
+    if curr.pos == 27 && old1.pos == 21 ||
+       curr.pos == 21 && old1.pos == 27 {
+        return 4.;
+    }
+
+    // h\ \h
+    if curr.pos == 16 && old1.pos == 10 ||
+       curr.pos == 10 && old1.pos == 16 {
+        return 4.;
+    }
+
+    // 5 point penalties.
+
     // y' 'y
     if curr.pos == 5 && old1.pos == 21 ||
        curr.pos == 21 && old1.pos == 5 {
-        return 3.;
-    }
-
-    // tc ct y, ,y
-    if curr.pos == 4 && old1.pos == 24 ||
-       curr.pos == 24 && old1.pos == 4 ||
-       curr.pos == 5 && old1.pos == 29 ||
-       curr.pos == 29 && old1.pos == 5 {
-        return 3.;
+        return 5.;
     }
 
     // tx xt y. .y
@@ -691,23 +920,27 @@ fn calculate_stretch_penalty(curr: &KeyPress, old1: &KeyPress)
        curr.pos == 23 && old1.pos == 4 ||
        curr.pos == 5 && old1.pos == 30 ||
        curr.pos == 30 && old1.pos == 5 {
-        return 3.
+        return 5.
     }
 
-    // tz zt y/ /y
-    if curr.pos == 4 && old1.pos == 22 ||
-       curr.pos == 22 && old1.pos == 4 ||
-       curr.pos == 5 && old1.pos == 31 ||
-       curr.pos == 31 && old1.pos == 5 {
-        return 3.;
+    // 6 point penalties.
+
+    // tc ct y, ,y
+    if curr.pos == 4 && old1.pos == 24 ||
+       curr.pos == 24 && old1.pos == 4 ||
+       curr.pos == 5 && old1.pos == 29 ||
+       curr.pos == 29 && old1.pos == 5 {
+        return 6.;
     }
+
+    // 7 point penalties.
 
     // be eb ni in
     if curr.pos == 26 && old1.pos == 2 ||
        curr.pos == 2 && old1.pos == 26 ||
        curr.pos == 27 && old1.pos == 7 ||
        curr.pos == 7 && old1.pos == 27 {
-        return 3.;
+        return 7.;
     }
 
     // cq qc ,p p,
@@ -715,49 +948,47 @@ fn calculate_stretch_penalty(curr: &KeyPress, old1: &KeyPress)
        curr.pos == 0 && old1.pos == 24 ||
        curr.pos == 29 && old1.pos == 9 ||
        curr.pos == 9 && old1.pos == 29 {
-        return 3.;
+        return 7.;
     }
 
-    // 4 point penalties.
+    // 8 point penalties.
 
     // n\ \n
     if curr.pos == 27 && old1.pos == 10 ||
        curr.pos == 10 && old1.pos == 27 {
-        return 4.;
+        return 8.;
     }
 
-    // 5 point penalties.
+    // 9 point penalties.
 
     // xq qx .p p.
     if curr.pos == 23 && old1.pos == 0 ||
        curr.pos == 0 && old1.pos == 23 ||
        curr.pos == 30 && old1.pos == 9 ||
        curr.pos == 9 && old1.pos == 30 {
-        return 5.;
+        return 9.;
     }
-
-    // 6 point penalties.
 
     // .\ \.
     if curr.pos == 30 && old1.pos == 10 ||
        curr.pos == 10 && old1.pos == 30 {
-        return 6.;
+        return 9.;
     }
 
     // ,\ \,
     if curr.pos == 29 && old1.pos == 10 ||
        curr.pos == 10 && old1.pos == 29 {
-        return 6.;
+        return 9.;
     }
 
-    // 7 point penalties.
+    // 10 point penalties.
 
     // wz zw o/ /o
     if curr.pos == 1 && old1.pos == 22 ||
        curr.pos == 22 && old1.pos == 1 ||
        curr.pos == 8 && old1.pos == 31 ||
        curr.pos == 31 && old1.pos == 8 {
-        return 7.;
+        return 10.;
     }
 
     0.

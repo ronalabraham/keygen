@@ -195,10 +195,10 @@ pub static ARENSITO_LAYOUT: Layout = Layout(
 //     true,  true,  true,  true,  true,  true,  true,  true,  true,  true,
 //     false]));
 static SWAPPABLE_MAP: KeyMap<bool>= KeyMap([
-    true,  true,  true,  true,  true,       true,  true,  true,  true,  true,  true,
-    true,  true,  true,  true,  true,       true,  true,  true,  true,  true,  true,
+    true,  true,  false, true,  true,       true,  true,  false, true,  true,  true,
+    true,  true,  false, true,  true,       true,  true,  false, true,  true,  true,
     true,  true,  true,  true,  true,       true,  true,  true,  true,  true,
-                                true,       false
+                                false,      false
 ]);
 
 fn num_swappable(swappable_map: &KeyMap<bool>) -> usize {
