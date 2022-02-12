@@ -119,7 +119,7 @@ fn run(s: &str, layout: &layout::Layout, debug: bool, top: usize, swaps: usize)
 fn run_ref(s: &str, layout: &layout::Layout)
 {
     let penalties = penalty::init();
-    let init_pos_map = layout::INIT_LAYOUT.get_position_map();
+    let init_pos_map = layout.get_position_map();
     let quartads = penalty::prepare_quartad_list(s, &init_pos_map);
     let len = s.len();
 
@@ -176,7 +176,7 @@ fn run_ref(s: &str, layout: &layout::Layout)
 fn refine(s: &str, layout: &layout::Layout, debug: bool, top: usize, swaps: usize)
 {
     let penalties = penalty::init();
-    let init_pos_map = layout::INIT_LAYOUT.get_position_map();
+    let init_pos_map = layout.get_position_map();
     let quartads = penalty::prepare_quartad_list(s, &init_pos_map);
     let len = s.len();
 
