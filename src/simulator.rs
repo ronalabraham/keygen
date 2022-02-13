@@ -49,6 +49,13 @@ pub fn simulate<'a>(
     // Keep track of the best layouts we've encountered.
     let mut best_layouts: LinkedList<BestLayoutsEntry> = LinkedList::new();
 
+    // Insert initial layout into best layouts.
+    let init_entry = BestLayoutsEntry {
+        layout: init_layout.clone(),
+        penalty: penalty.1,
+    };
+    best_layouts = list_insert_ordered(best_layouts, init_entry);
+
     let mut accepted_layout = init_layout.clone();
     let mut accepted_penalty = penalty.1;
     for i in annealing::get_simulation_range() {
