@@ -43,9 +43,9 @@ impl <'a> fmt::Display for KeyPenaltyResult<'a>
 //                         0.0,    0.0]);
 
 static BASE_PENALTY: KeyMap<f64> = KeyMap([
-    3.50, 0.60, 0.60, 1.50, 2.50,    2.50, 1.50, 0.60, 0.60, 3.50, 4.25,
-    0.80, 0.25, 0.00, 0.00, 1.50,    1.50, 0.00, 0.00, 0.25, 0.80, 3.25,
-    3.00, 2.00, 1.50, 1.00, 2.00,    2.00, 1.00, 1.50, 2.00, 3.00,
+    3.50, 0.50, 0.50, 1.50, 2.50,    2.50, 1.50, 0.50, 0.50, 3.50, 4.50,
+    0.75, 0.00, 0.00, 0.00, 2.00,    2.00, 0.00, 0.00, 0.00, 0.75, 4.00,
+    3.00, 2.00, 1.50, 1.00, 1.50,    1.50, 1.00, 1.50, 2.00, 3.00,
                             0.00,    0.00]);
 
 pub fn init<'a>()
@@ -120,6 +120,14 @@ pub fn init<'a>()
     // example POP or SAS on Qwerty.
     penalties.push(KeyPenalty {
         name: "pinky/ring alternation",
+    });
+
+    // 11. Penalize a few points for repeatedly pressing the same key for
+    // certain fingers. This is similar to the "same finger" penalty, but for
+    // the same key. For example, double-tapping using pinkies is harder than
+    // double-tapping using index fingers.
+    penalties.push(KeyPenalty {
+        name: "same key",
     });
 
     penalties
@@ -295,6 +303,17 @@ fn penalize<'a, 'b>(
             }
             total += penalty;
         }
+
+        // 11. Same key.
+        if curr.pos == old1.pos {
+            let penalty = calculate_same_key_penalty(curr, old1);
+            let penalty = penalty * count;
+            if detailed && penalty > 0. {
+                *result[11].high_keys.entry(slice2).or_insert(0.0) += penalty;
+                result[11].total += penalty;
+            }
+            total += penalty;
+        }
     }
 
     // Three key penalties.
@@ -433,19 +452,19 @@ fn calculate_same_finger_penalty(curr: &KeyPress, old1: &KeyPress)
            curr.pos == 6 && old1.pos == 5 {
             return 3.;
         }
+        // vf/fv/mj/jm
+        if curr.pos == 25 && old1.pos == 14 ||
+           curr.pos == 14 && old1.pos == 25 ||
+           curr.pos == 28 && old1.pos == 17 ||
+           curr.pos == 17 && old1.pos == 28 {
+            return 3.;
+        }
         // fr/rf/ju/uj
         if curr.pos == 14 && old1.pos == 3 ||
            curr.pos == 3 && old1.pos == 14 ||
            curr.pos == 17 && old1.pos == 6 ||
            curr.pos == 6 && old1.pos == 17 {
             return 4.;
-        }
-        // vf/fv/mj/jm
-        if curr.pos == 25 && old1.pos == 14 ||
-           curr.pos == 14 && old1.pos == 25 ||
-           curr.pos == 28 && old1.pos == 17 ||
-           curr.pos == 17 && old1.pos == 28 {
-            return 5.;
         }
         // br/rb/nu/un
         if curr.pos == 26 && old1.pos == 3 ||
@@ -992,6 +1011,21 @@ fn calculate_stretch_penalty(curr: &KeyPress, old1: &KeyPress)
     }
 
     0.
+}
+
+fn calculate_same_key_penalty(curr: &KeyPress, old1: &KeyPress)
+-> f64 {
+
+    // This penalty should only be calculated if we consecutively use the same
+    // key.
+    assert!(curr.hand == old1.hand);
+    assert!(curr.finger == old1.finger);
+    assert!(curr.pos == old1.pos);
+
+    match curr.finger {
+        Finger::Pinky  => 3.0,
+        _ => 0.
+    }
 }
 
 fn is_roll_out(curr: Finger, prev: Finger) -> bool {
